@@ -2,14 +2,6 @@
 -- insert-ordered-containers-0.3 compatibility fix to openapi3.
 -- Credit for the design and implementation belongs to the swagger2 authors.
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 -- |
 -- Module:      Data.HashMap.Strict.InsOrd.Compat
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>

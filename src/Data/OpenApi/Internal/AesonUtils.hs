@@ -1,10 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
 module Data.OpenApi.Internal.AesonUtils (
     -- * Generic functions
     AesonDefaultValue(..),

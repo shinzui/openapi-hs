@@ -1,6 +1,4 @@
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE OverloadedLists     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Data.OpenApi.Schema.Generator where
 
@@ -70,6 +68,7 @@ schemaGen defns schema =
               OpenApiItemsArray refs ->
                   let itemGens = schemaGen defns . dereference defns <$> refs
                   in fmap (Array . V.fromList) $ sequence itemGens
+        | otherwise -> pure $ Array V.empty
       Just OpenApiString -> do
         size <- getSize
         let minLength' = fromMaybe 0 $ fromInteger <$> schema ^. minLength

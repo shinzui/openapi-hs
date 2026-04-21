@@ -1,16 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
 -- Generic a is redundant in  ToParamSchema a default imple
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- For TypeErrors
@@ -19,6 +6,7 @@ module Data.OpenApi.Internal.ParamSchema where
 
 import Control.Lens
 import Data.Aeson (ToJSON (..))
+import Data.Kind (Type)
 import Data.Proxy
 import GHC.Generics
 
@@ -313,7 +301,7 @@ instance ToParamSchema UUID where
 genericToParamSchema :: forall a t. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> Proxy a -> Schema
 genericToParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy (Rep a)) mempty
 
-class GToParamSchema (f :: * -> *) where
+class GToParamSchema (f :: Type -> Type) where
   gtoParamSchema :: SchemaOptions -> Proxy f -> Schema -> Schema
 
 instance GToParamSchema f => GToParamSchema (D1 d f) where
@@ -331,7 +319,7 @@ instance ToParamSchema c => GToParamSchema (K1 i c) where
 instance (GEnumParamSchema f, GEnumParamSchema g) => GToParamSchema (f :+: g) where
   gtoParamSchema opts _ = genumParamSchema opts (Proxy :: Proxy (f :+: g))
 
-class GEnumParamSchema (f :: * -> *) where
+class GEnumParamSchema (f :: Type -> Type) where
   genumParamSchema :: SchemaOptions -> Proxy f -> Schema -> Schema
 
 instance (GEnumParamSchema f, GEnumParamSchema g) => GEnumParamSchema (f :+: g) where

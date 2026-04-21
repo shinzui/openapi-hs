@@ -1,8 +1,3 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
 -- |
 -- Module:      Data.OpenApi.Declare
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
@@ -52,7 +47,6 @@ instance (Applicative m, Monad m, Monoid d) => Applicative (DeclareT d m) where
     return (mappend d' d'', f x)
 
 instance (Applicative m, Monad m, Monoid d) => Monad (DeclareT d m) where
-  return x = DeclareT (\_ -> pure (mempty, x))
   DeclareT dx >>= f = DeclareT $ \d -> do
     ~(d',  x) <- dx d
     ~(d'', y) <- runDeclareT (f x) (mappend d d')

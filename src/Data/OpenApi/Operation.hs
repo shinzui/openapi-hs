@@ -1,4 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
 -- |
 -- Module:      Data.OpenApi.Operation
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
