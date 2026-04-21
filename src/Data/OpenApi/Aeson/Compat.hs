@@ -10,7 +10,7 @@ import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.HashMap.Strict as HM
 #endif
 import           Data.Bifunctor             (first)
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 import qualified Data.Text                  as T
 
 #if MIN_VERSION_aeson(2,0,0)

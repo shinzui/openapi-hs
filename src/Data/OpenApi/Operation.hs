@@ -47,7 +47,7 @@ import Data.OpenApi.Internal
 import Data.OpenApi.Lens
 import Data.OpenApi.Schema
 
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 import qualified Data.HashSet.InsOrd as InsOrdHS
 
 -- $setup
@@ -55,7 +55,7 @@ import qualified Data.HashSet.InsOrd as InsOrdHS
 -- >>> import Data.Proxy
 -- >>> import Data.Time
 -- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
--- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
+-- >>> import qualified Data.HashMap.Strict.InsOrd.Compat as IOHM
 -- >>> import Data.OpenApi.Internal.Utils
 
 -- | Prepend path piece to all operations of the spec.

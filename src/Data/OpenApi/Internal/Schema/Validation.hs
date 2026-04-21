@@ -40,7 +40,7 @@ import           Data.Foldable                       (for_, sequenceA_,
 #if !MIN_VERSION_aeson(2,0,0)
 import           Data.HashMap.Strict                 (HashMap)
 #endif
-import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat   as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
 import           Data.Maybe                          (fromMaybe)
 import           Data.Proxy

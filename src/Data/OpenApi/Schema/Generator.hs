@@ -11,7 +11,7 @@ import           Control.Lens.Operators
 import           Control.Monad                           (filterM)
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Strict.InsOrd              as M
+import qualified Data.HashMap.Strict.InsOrd.Compat       as M
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Scientific

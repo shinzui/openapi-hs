@@ -139,7 +139,7 @@ import Data.OpenApi.Internal
 -- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
 -- >>> import Data.OpenApi.Internal
 -- >>> import Data.OpenApi.Internal.Schema
--- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
+-- >>> import qualified Data.HashMap.Strict.InsOrd.Compat as IOHM
 -- >>> import Data.OpenApi.Internal.Utils
 -- >>> import Data.OpenApi.Lens
 -- >>> :set -XDeriveGeneric

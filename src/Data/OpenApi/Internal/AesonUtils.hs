@@ -37,7 +37,7 @@ import Generics.SOP
 
 import qualified Data.Text as T
 import qualified Data.Set as Set
-import qualified Data.HashMap.Strict.InsOrd as InsOrd
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrd
 import qualified Data.HashSet.InsOrd as InsOrdHS
 
 import Data.OpenApi.Aeson.Compat (keyToString, objectToList, stringToKey)
