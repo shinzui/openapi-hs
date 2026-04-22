@@ -1,6 +1,4 @@
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE OverloadedLists     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Data.OpenApi.Schema.Generator where
 
@@ -11,7 +9,7 @@ import           Control.Lens.Operators
 import           Control.Monad                           (filterM)
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Strict.InsOrd              as M
+import qualified Data.HashMap.Strict.InsOrd.Compat       as M
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Scientific
@@ -70,6 +68,7 @@ schemaGen defns schema =
               OpenApiItemsArray refs ->
                   let itemGens = schemaGen defns . dereference defns <$> refs
                   in fmap (Array . V.fromList) $ sequence itemGens
+        | otherwise -> pure $ Array V.empty
       Just OpenApiString -> do
         size <- getSize
         let minLength' = fromMaybe 0 $ fromInteger <$> schema ^. minLength

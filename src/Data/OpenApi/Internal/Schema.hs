@@ -1,21 +1,5 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- For TypeErrors
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
@@ -23,6 +7,8 @@ module Data.OpenApi.Internal.Schema where
 
 import Prelude ()
 import Prelude.Compat
+
+import Data.Kind (Type)
 
 import Control.Lens hiding (allOf)
 import Data.Data.Lens (template)
@@ -39,7 +25,7 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import           "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
@@ -587,7 +573,7 @@ sketchStrictSchema = go . toJSON
       where
         names = objectKeys o
 
-class GToSchema (f :: * -> *) where
+class GToSchema (f :: Type -> Type) where
   gdeclareNamedSchema :: SchemaOptions -> Proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
@@ -1046,7 +1032,7 @@ gdeclareNamedSumSchema opts proxy _
 
 type AllNullary = All
 
-class GSumToSchema (f :: * -> *)  where
+class GSumToSchema (f :: Type -> Type)  where
   gsumToSchema :: SchemaOptions -> Proxy f -> WriterT AllNullary (Declare (Definitions Schema)) [(T.Text, Referenced Schema)]
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where

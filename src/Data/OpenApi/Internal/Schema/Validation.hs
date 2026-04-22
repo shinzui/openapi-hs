@@ -1,19 +1,5 @@
 {-# OPTIONS_GHC -Wall                  #-}
 {-# LANGUAGE CPP                        #-}
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE FunctionalDependencies     #-}
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE PackageImports             #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE ViewPatterns               #-}
 -- |
 -- Module:      Data.OpenApi.Internal.Schema.Validation
 -- Copyright:   (c) 2015 GetShopTV
@@ -40,7 +26,7 @@ import           Data.Foldable                       (for_, sequenceA_,
 #if !MIN_VERSION_aeson(2,0,0)
 import           Data.HashMap.Strict                 (HashMap)
 #endif
-import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat   as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
 import           Data.Maybe                          (fromMaybe)
 import           Data.Proxy

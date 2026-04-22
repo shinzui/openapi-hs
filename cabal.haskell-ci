@@ -1,7 +1,6 @@
 branches: master
 
-distribution: focal
-allow-failures: >=9.2
+allow-failures: >=9.14
 
 -- https://github.com/haskell-CI/haskell-ci/issues/658#issuecomment-1513692337
 haddock-components: libs
@@ -11,9 +10,18 @@ haddock-components: libs
 -- and https://github.com/haskell/cabal/issues/8707
 haddock: < 9.0 || >= 9.4
 
+-- Breaks on doctests
+error-unused-packages: False
+
 constraint-set aeson-1
   constraints: aeson <2.0
   ghc: <9.2
 
 constraint-set aeson-2
   constraints: aeson >=2.0
+
+constraint-set insert-ordered-containers-0.2
+  constraints: insert-ordered-containers <0.3
+
+constraint-set insert-ordered-containers-0.3
+  constraints: insert-ordered-containers >=0.3

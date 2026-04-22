@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
 -- |
 -- Module:      Data.OpenApi.SchemaOptions
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>

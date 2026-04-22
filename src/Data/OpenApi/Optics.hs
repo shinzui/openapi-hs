@@ -1,10 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedLabels #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
 -- Module:      Data.OpenApi.Optics
@@ -18,7 +11,7 @@
 -- >>> import Optics.Core
 -- >>> :set -XOverloadedLabels
 -- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
--- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
+-- >>> import qualified Data.HashMap.Strict.InsOrd.Compat as IOHM
 --
 -- Example from the "Data.OpenApi" module using @optics@:
 --
