@@ -1,8 +1,14 @@
 Unreleased
 ----------
 
+3.2.5
+-----
+
+- Support insert-ordered-containers 0.3 [#119](https://github.com/biocad/openapi3/pull/119).
+
 3.2.4
 -----
+
 - Give `title` to sub schemas of sum types [#88](https://github.com/biocad/openapi3/pull/88).
 
 3.2.3
