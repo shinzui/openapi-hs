@@ -665,9 +665,9 @@ data Schema = Schema
   , _schemaFormat :: Maybe Format
   , _schemaItems :: Maybe OpenApiItems
   , _schemaMaximum :: Maybe Scientific
-  , _schemaExclusiveMaximum :: Maybe Bool
+  , _schemaExclusiveMaximum :: Maybe Scientific
   , _schemaMinimum :: Maybe Scientific
-  , _schemaExclusiveMinimum :: Maybe Bool
+  , _schemaExclusiveMinimum :: Maybe Scientific
   , _schemaMaxLength :: Maybe Integer
   , _schemaMinLength :: Maybe Integer
   , _schemaPattern :: Maybe Pattern

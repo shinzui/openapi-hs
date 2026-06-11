@@ -121,7 +121,8 @@ instance ToParamSchema Natural where
   toParamSchema _ = mempty
     & type_            ?~ OpenApiTypeSingle OpenApiInteger
     & minimum_         ?~ 0
-    & exclusiveMinimum ?~ False
+    -- 3.1: exclusiveMinimum is numeric, not a boolean flag. A Natural is >= 0,
+    -- which is exactly @minimum: 0@ with no exclusiveMinimum.
 
 instance ToParamSchema Int    where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Int8   where toParamSchema = toParamSchemaBoundedIntegral

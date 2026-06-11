@@ -304,17 +304,24 @@ validateInteger n = do
   validateNumber n
 
 validateNumber :: Scientific -> Validation Schema ()
-validateNumber n = withConfig $ \_cfg -> withSchema $ \sch -> do
-  let exMax = Just True == sch ^. exclusiveMaximum
-      exMin = Just True == sch ^. exclusiveMinimum
-
+validateNumber n = withConfig $ \_cfg -> withSchema $ \_sch -> do
+  -- 3.1 / JSON Schema 2020-12: maximum/minimum are always non-strict, and
+  -- exclusiveMaximum/exclusiveMinimum are independent numeric keywords.
   check maximum_ $ \m ->
-    when (if exMax then (n >= m) else (n > m)) $
-      invalid ("value " ++ show n ++ " exceeds maximum (should be " ++ (if exMax then "<" else "<=") ++ show m ++ ")")
+    when (n > m) $
+      invalid ("value " ++ show n ++ " exceeds maximum (should be <=" ++ show m ++ ")")
 
   check minimum_ $ \m ->
-    when (if exMin then (n <= m) else (n < m)) $
-      invalid ("value " ++ show n ++ " falls below minimum (should be " ++ (if exMin then ">" else ">=") ++ show m ++ ")")
+    when (n < m) $
+      invalid ("value " ++ show n ++ " falls below minimum (should be >=" ++ show m ++ ")")
+
+  check exclusiveMaximum $ \m ->
+    when (n >= m) $
+      invalid ("value " ++ show n ++ " is not below exclusiveMaximum (should be <" ++ show m ++ ")")
+
+  check exclusiveMinimum $ \m ->
+    when (n <= m) $
+      invalid ("value " ++ show n ++ " is not above exclusiveMinimum (should be >" ++ show m ++ ")")
 
   check multipleOf $ \k ->
     when (not (isInteger (n / k))) $

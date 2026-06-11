@@ -79,10 +79,10 @@ partially done item into a done half and a remaining half rather than leaving it
 - [x] M1 (2026-06-10): Used explicit `OpenApiTypeSingle` at all ~50 `type_ ?~` set-sites (src + tests, via perl normalization preserving spacing) and `singleType` at read-sites; added `schemaTypes` normalizer in Validation.
 - [x] M1 (2026-06-10): Updated `HasType NamedSchema` (Lens.hs) and `#type` (Optics.hs) to `Maybe OpenApiTypeValue`.
 - [x] M1 (2026-06-10): Round-trip verified in repl: `{"type":["string","null"]}` encodes/round-trips; single type stays `{"type":"string"}`. Full suite green (375 examples, 0 failures).
-- [ ] M2: Change `_schemaExclusiveMaximum`/`_schemaExclusiveMinimum` to `Maybe Scientific` (Internal.hs).
-- [ ] M2: Update `HasExclusiveMaximum`/`HasExclusiveMinimum` instances in Lens.hs and the optics in Optics.hs from `Maybe Bool` to `Maybe Scientific`.
-- [ ] M2: Fix the two `?~ False`/`Just True ==` boolean usages (ParamSchema.hs, Validation.hs) and confirm `AesonDefaultValue`/round-trip still holds.
-- [ ] M2: Round-trip test for `{"exclusiveMinimum": 0, "exclusiveMaximum": 100}` passes.
+- [x] M2 (2026-06-10): Changed `_schemaExclusiveMaximum`/`_schemaExclusiveMinimum` to `Maybe Scientific` (Internal.hs).
+- [x] M2 (2026-06-10): Updated `HasExclusiveMaximum`/`HasExclusiveMinimum` (Lens.hs) and the `#exclusiveMaximum`/`#exclusiveMinimum` optics (Optics.hs) to `Maybe Scientific`.
+- [x] M2 (2026-06-10): Natural `ToParamSchema` drops the `exclusiveMinimum ?~ False` (>= 0 is just `minimum: 0`); `validateNumber` rewritten so exclusive bounds are independent numeric keywords and maximum/minimum are non-strict (migration plan §1.1.2). `Maybe Scientific` is covered by `AesonDefaultValue (Maybe a)`, no new instance.
+- [x] M2 (2026-06-10): Verified `{"exclusiveMinimum":0,"exclusiveMaximum":100}` round-trips; full suite green (375 examples, 0 failures).
 - [ ] M3: Remove `_schemaNullable` field from `Schema` (Internal.hs); remove the generated `nullable` lens/optic usages (none exist outside makeFields — confirm).
 - [ ] M3: Simplify `OpenApiItems` to `OpenApiItemsObject | OpenApiItemsBoolean` (Internal.hs).
 - [ ] M3: Rewrite `ToJSON OpenApiItems`, `FromJSON OpenApiItems`, the `FromJSON Schema` nullary cleanup, and the `saoSubObject` handling for the boolean case.
