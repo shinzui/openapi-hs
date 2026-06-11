@@ -185,6 +185,9 @@ Full API documentation is on
 [Hackage](https://hackage.haskell.org/package/openapi-hs). Each module's Haddocks include
 worked examples.
 
+The design and implementation strategy behind the 3.1 work is documented in
+**[`docs/OPENAPI31_MIGRATION_PLAN.md`](/docs/OPENAPI31_MIGRATION_PLAN.md)**.
+
 ## Contributing
 
 Bug reports, fixes, documentation improvements, and other contributions are welcome. Please open
