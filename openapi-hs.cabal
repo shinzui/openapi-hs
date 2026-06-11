@@ -164,6 +164,7 @@ test-suite spec
     Data.OpenApi.ParamSchemaSpec
     Data.OpenApi.SchemaSpec
     Data.OpenApi.Schema.ValidationSpec
+    Data.OpenApi.Schema.Validation31Spec
     Data.OpenApi.Schema.GeneratorSpec
     Data.OpenApi.Schema.CoreTypes31Spec
     Data.OpenApi.Schema31Spec

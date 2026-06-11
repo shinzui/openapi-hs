@@ -113,7 +113,7 @@ migration plan itself; see Decision Log). See the Decision Log for the full reco
 | 3 | OpenAPI 3.1 Core Schema Type Changes | docs/plans/3-openapi-3-1-core-schema-type-changes.md | None | EP-1 | Complete |
 | 4 | OpenAPI 3.1 JSON Schema Fields and Reference Keywords | docs/plans/4-openapi-3-1-json-schema-fields-and-reference-keywords.md | EP-3 | EP-1 | Complete |
 | 5 | OpenAPI 3.1 Top-Level Object Features | docs/plans/5-openapi-3-1-top-level-object-features.md | EP-3 | EP-4 | Complete |
-| 6 | OpenAPI 3.1 Schema Validation | docs/plans/6-openapi-3-1-schema-validation.md | EP-3, EP-4 | None | Not Started |
+| 6 | OpenAPI 3.1 Schema Validation | docs/plans/6-openapi-3-1-schema-validation.md | EP-3, EP-4 | None | Complete |
 | 7 | OpenAPI 3.1 Migration Helpers, Tests, and Release | docs/plans/7-openapi-3-1-migration-helpers-tests-and-release.md | EP-3, EP-4, EP-5 | EP-2, EP-6 | Not Started |
 
 Status values: Not Started, In Progress, Complete, Cancelled.
@@ -235,7 +235,7 @@ milestones complete.
 - [x] EP-4: Add `$id`/`$anchor`/`$defs`/`$ref`/`$dynamicRef`/`$dynamicAnchor`; round-trip all new fields (2026-06-10)
 - [x] EP-5: Add `webhooks` to `OpenApi`; `summary` to `Info`; `identifier` to `License`; `$ref` to `PathItem` (2026-06-10)
 - [x] EP-5: Round-trip top-level features; reuse EP-4's `$`-key helper (2026-06-10)
-- [ ] EP-6: Validate type arrays, `prefixItems`, `contains`/`minContains`/`maxContains`, `if`/`then`/`else`, `const`
+- [x] EP-6: Validate type arrays, `prefixItems`, `contains`/`minContains`/`maxContains`, `if`/`then`/`else`, `const` (2026-06-10)
 - [ ] EP-7: Implement `Value`-layer 3.0→3.1 migration helpers; migration tests pass
 - [ ] EP-7: Comprehensive 3.1 test suite; `MIGRATION_3.0_TO_3.1.md`; bump to 4.0.0; CHANGELOG; module docs
 

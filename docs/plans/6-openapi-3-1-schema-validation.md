@@ -86,17 +86,15 @@ is missing, EP-3 or EP-4 is incomplete and must be finished first.
 This checklist is the authoritative current state. Update it at every stopping point; split a
 partially done item into a done half and a remaining half rather than leaving it ambiguous.
 
-- [ ] M1: Add `schemaTypes` normalizer and rewrite `validateSchemaType` / `validateParamSchemaType` / `showType` so a value matches if it matches **any** type in a `type` array (and `OpenApiNull` matches JSON `null`).
-- [ ] M1: Rewrite `validateNumber` so `exclusiveMaximum` / `exclusiveMinimum` are independent numeric strict bounds, validated in addition to (not as a modifier on) `maximum` / `minimum`.
-- [ ] M1: ValidationSpec tests for type arrays (pass `"hi"`/`null`, fail `3`) and numeric exclusive bounds (pass `50`, fail `0` and `100`) — both with passing and failing values.
-- [ ] M2: Implement `prefixItems` validation in `validateArray` (positional, with `items`/`OpenApiItemsBoolean False` controlling extra elements).
-- [ ] M2: Implement `contains` / `minContains` / `maxContains` validation in `validateArray`.
-- [ ] M2: ValidationSpec tests for `prefixItems`+`items:false` and `contains`+`minContains`/`maxContains`, each with a passing and a failing value.
-- [ ] M3: Implement `if`/`then`/`else` conditional validation (the `if` result never itself causes failure).
-- [ ] M3: Implement `const` validation (exact JSON value equality).
-- [ ] M3: ValidationSpec tests for `if`/`then`/`else` (country/postal_code) and `const`, each with a passing and a failing value.
-- [ ] M4: Implement best-effort `unevaluatedProperties` / `unevaluatedItems` with the documented limitation; tests for the cases the best-effort version does cover.
-- [ ] All milestones: `nix develop -c cabal build all` and `nix develop -c cabal test all` are green.
+- [x] M1 (2026-06-10): `schemaTypes` + the `validateSchemaType`/`validateParamSchemaType`/`showType` "matches-any" rewrite and the independent numeric `validateNumber` were **already landed by EP-3**. EP-6 verified the semantics (type arrays as union, `OpenApiNull` ↔ `null`, exclusive bounds independent) and added behavior tests.
+- [x] M1 (2026-06-10): tests for type arrays (`"hi"`/`null` pass, `3` fails) and exclusive bounds (`50` passes, `0`/`100` fail).
+- [x] M2 (2026-06-10): `prefixItems` positional validation in `validateArray` (legacy whole-array `items` check guarded to run only when `prefixItems` is absent; trailing elements governed by `items`/`OpenApiItemsBoolean False`).
+- [x] M2 (2026-06-10): `contains`/`minContains`/`maxContains` counting (via `runValidation` per element, `minContains` default 1, `maxContains` optional).
+- [x] M2 (2026-06-10): tests for `prefixItems`+`items:false` and `contains`+`minContains`/`maxContains`.
+- [x] M3 (2026-06-10): `validateConditional` (`if` is a non-failing switch via `runValidation`) and `validateConst` (exact `Value` equality), both wired into `validateWithSchema`.
+- [x] M3 (2026-06-10): tests for `if`/`then` (scalar form — see Surprises) and `const`.
+- [x] M4 (2026-06-10): best-effort `validateUnevaluated` (local-only `unevaluatedProperties`/`unevaluatedItems`) with the documented `TODO(annotations)` limitation; tests for the local cases.
+- [x] All milestones (2026-06-10): `cabal build all` + `cabal test all` green — 441 examples, 0 failures, 5 pending.
 
 
 ## Surprises & Discoveries
@@ -131,6 +129,31 @@ implementation. Provide concise evidence (test output is ideal).
   must already have been adjusted by EP-3 (its Milestone 3 step 9 rewrites that branch to
   `OpenApiItemsBoolean b -> when (not b && not (Vector.null xs)) (invalid …)`). EP-6 builds
   `prefixItems` and `contains` validation *on top of* that EP-3-adjusted `validateArray`.
+
+- Discovery (M1 implementation, 2026-06-10): **EP-3 pre-landed all of M1.** The `schemaTypes`
+  normalizer, the "matches-any" `validateSchemaType`/`validateParamSchemaType`, and the
+  independent-numeric `validateNumber` already existed (committed by EP-3). M1 became
+  verification + tests, exactly as the plan's Discovery notes anticipated.
+
+- Discovery (M3/M4 implementation, 2026-06-10): **this engine's `validateObject` is strict, and it
+  does not validate `not`.** Two consequences for the tests:
+  (1) The plan's object-based `if country=USA then postal_code` test fails because `validateObject`
+  rejects any property not listed in `properties` when `additionalProperties` is absent
+  (`"property … is found in JSON value, but it is not mentioned in Swagger schema"`). Rewrote the
+  `if/then` test to a **scalar** form ("if the value is a string, then it must be `const "yes"`")
+  which exercises the if/then switch without tripping object strictness or the no-op pattern checker.
+  (2) The plan's `unevaluatedItems` test used an always-false `{not:{}}` sub-schema, but the engine
+  never validated `not` (a pre-existing 3.0-era gap, out of EP-6 scope), so `{not:{}}` accepts
+  everything. Rewrote the test's `unevaluatedItems` schema to `{type:string}` so a trailing non-string
+  element is genuinely rejected. Implementing `not`/`anyOf` validation is noted as future work but
+  is outside EP-6's keyword list.
+
+- Discovery (test placement, 2026-06-10): the EP-6 tests went into a **new** module
+  `test/Data/OpenApi/Schema/Validation31Spec.hs` (registered in the cabal test-suite) rather than
+  extending `ValidationSpec` as the Decision Log planned. Reason: the new tests need
+  `OverloadedStrings`/`OverloadedLists`, and turning those on module-wide in `ValidationSpec` broke
+  its existing literals' defaulting (`toJSON "red"` became ambiguous). A separate module with its own
+  pragmas is cleaner and avoids touching the existing suite.
 
 (Add further entries here as implementation proceeds.)
 
@@ -206,7 +229,27 @@ Record every decision made while working on the plan.
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion.
 Compare the result against the original purpose.
 
-(To be filled during and after implementation.)
+**Completed 2026-06-10.** The validation engine now understands the 3.1 keyword set:
+
+- Type arrays validate as a union (`["string","null"]` accepts a string and `null`, rejects a
+  number) and numeric exclusive bounds are independent strict checks (both pre-landed by EP-3,
+  verified + tested here).
+- `prefixItems` validates positionally with `items`/`items:false` governing trailing elements;
+  `contains`/`minContains`/`maxContains` count matches.
+- `if`/`then`/`else` switches sub-schemas without `if` itself failing; `const` enforces exact
+  `Value` equality.
+- `unevaluatedProperties`/`unevaluatedItems` are best-effort (local-only) with a documented
+  `TODO(annotations)` limitation.
+
+`cabal build all` + `cabal test all`: 441 examples, 0 failures, 5 pending. IP-2 honoured (no
+`Schema`/lens/optic/JSON-instance changes — engine + tests only).
+
+**Gaps / future work:**
+- `unevaluated*` ignores cross-schema evaluation through `allOf`/`anyOf`/`oneOf`/`if`/`$ref`
+  (annotation tracking), so it can be stricter than a fully-conformant validator. Documented in
+  the function Haddock and the Decision Log.
+- The engine still does not validate `not` or `anyOf` (pre-existing gaps, outside EP-6's keyword
+  list) — noted in Surprises as future work.
 
 
 ## Context and Orientation

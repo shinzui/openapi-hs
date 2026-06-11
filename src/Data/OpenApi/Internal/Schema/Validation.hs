@@ -296,6 +296,63 @@ validateWithSchema :: Value -> Validation Schema ()
 validateWithSchema val = do
   validateSchemaType val
   validateEnum val
+  validateConst val          -- 3.1: const
+  validateConditional val    -- 3.1: if/then/else
+  validateUnevaluated val     -- 3.1: best-effort unevaluatedProperties/unevaluatedItems
+
+-- | @const@: the instance must equal the schema's @const@ value exactly
+-- (JSON value equality).
+validateConst :: Value -> Validation Schema ()
+validateConst val = check const_ $ \expected ->
+  when (val /= expected) $
+    invalid ("value " ++ show val ++ " does not equal const " ++ show expected)
+
+-- | @if@/@then@/@else@. Validating against @if@ is only a switch: if it passes,
+-- @then@ must pass; otherwise @else@ must pass. The @if@ check itself never
+-- contributes an error.
+validateConditional :: Value -> Validation Schema ()
+validateConditional val = check if_ $ \ifSchema -> withConfig $ \cfg -> withSchema $ \sch ->
+  let ifPasses = case runValidation (validateWithSchemaRef ifSchema val) cfg sch of
+                   Failed _ -> False
+                   Passed _ -> True
+  in if ifPasses
+       then maybe valid (\t -> validateWithSchemaRef t val) (sch ^. then_)
+       else maybe valid (\e -> validateWithSchemaRef e val) (sch ^. else_)
+
+-- | Best-effort @unevaluatedProperties@ / @unevaluatedItems@.
+--
+-- LIMITATION (documented, intentional): "evaluated" is approximated as
+-- "evaluated by THIS schema object's own local @properties@/@additionalProperties@
+-- (for objects) or @prefixItems@/@items@ (for arrays)". Properties or items that a
+-- full JSON Schema 2020-12 validator would consider evaluated via in-place
+-- applicators (@allOf@/@anyOf@/@oneOf@/@if@/@then@/@else@/@$ref@) are NOT counted
+-- here, so this check can be STRICTER than the spec when those applicators are
+-- combined with @unevaluated*@. Full annotation-aware evaluation is future work.
+-- TODO(annotations).
+validateUnevaluated :: Value -> Validation Schema ()
+validateUnevaluated (Object o) = check unevaluatedProperties $ \ap -> withSchema $ \sch ->
+  let propKeys      = InsOrdHashMap.keys (sch ^. properties)
+      addlCoversAll = case sch ^. additionalProperties of
+                        Just (AdditionalPropertiesAllowed True) -> True
+                        Just (AdditionalPropertiesSchema _)     -> True
+                        _                                       -> False
+      leftover = [ (k, v) | (keyToText -> k, v) <- objectToList o
+                          , not addlCoversAll
+                          , k `notElem` propKeys ]
+  in for_ leftover $ \(k, v) -> case ap of
+       AdditionalPropertiesAllowed True  -> valid
+       AdditionalPropertiesAllowed False ->
+         invalid ("unevaluatedProperties=false but property " ++ show k ++ " was not evaluated")
+       AdditionalPropertiesSchema s      -> validateWithSchemaRef s v
+validateUnevaluated (Array xs) = check unevaluatedItems $ \uSchema -> withSchema $ \sch ->
+  let prefixLen      = maybe 0 length (sch ^. prefixItems)
+      itemsCoversAll = case sch ^. items of
+                         Just (OpenApiItemsObject _)     -> True
+                         Just (OpenApiItemsBoolean True) -> True
+                         _                               -> False
+      leftover = if itemsCoversAll then [] else drop prefixLen (Vector.toList xs)
+  in traverse_ (validateWithSchemaRef uSchema) leftover
+validateUnevaluated _ = valid
 
 validateInteger :: Scientific -> Validation Schema ()
 validateInteger n = do
@@ -354,12 +411,44 @@ validateArray xs = do
     when (len < fromInteger n) $
       invalid ("array is too short (size should be >=" ++ show n ++ ")")
 
-  check items $ \case
-    OpenApiItemsObject itemSchema -> traverse_ (validateWithSchemaRef itemSchema) xs
-    -- items: false forbids any array elements; items: true allows anything.
-    OpenApiItemsBoolean b ->
-      when (not b && not (Vector.null xs)) $
-        invalid "array must be empty (items: false)"
+  withSchema $ \sch -> case sch ^. prefixItems of
+    -- 3.1 tuple validation: each leading element validates positionally against
+    -- its prefix schema; elements beyond the prefix are governed by `items`.
+    Just prefixSchemas -> do
+      let prefixLen = length prefixSchemas
+      sequenceA_ [ validateWithSchemaRef ps x
+                 | (ps, x) <- zip prefixSchemas (Vector.toList xs) ]
+      case sch ^. items of
+        Just (OpenApiItemsObject itemSchema) ->
+          traverse_ (validateWithSchemaRef itemSchema) (drop prefixLen (Vector.toList xs))
+        Just (OpenApiItemsBoolean False)
+          | len > prefixLen ->
+              invalid ("array has " ++ show (len - prefixLen)
+                        ++ " item(s) beyond prefixItems but items:false forbids them")
+        _ -> valid   -- items:true or absent: trailing elements unconstrained here
+    -- No prefixItems: legacy whole-array `items` behavior.
+    Nothing -> check items $ \case
+      OpenApiItemsObject itemSchema -> traverse_ (validateWithSchemaRef itemSchema) xs
+      -- items: false forbids any array elements; items: true allows anything.
+      OpenApiItemsBoolean b ->
+        when (not b && not (Vector.null xs)) $
+          invalid "array must be empty (items: false)"
+
+  -- 3.1 contains / minContains / maxContains: count elements matching `contains`.
+  check contains_ $ \containsSchema -> withConfig $ \cfg -> withSchema $ \sch -> do
+    let matchesElem x = case runValidation (validateWithSchemaRef containsSchema x) cfg sch of
+                          Failed _ -> False
+                          Passed _ -> True
+        matches = length (filter matchesElem (Vector.toList xs))
+        minC = maybe 1 fromInteger (sch ^. minContains)
+        maxC = fmap fromInteger (sch ^. maxContains)
+    when (matches < minC) $
+      invalid ("array must contain at least " ++ show minC
+                ++ " matching element(s), found " ++ show matches)
+    for_ maxC $ \hi ->
+      when (matches > hi) $
+        invalid ("array must contain at most " ++ show hi
+                  ++ " matching element(s), found " ++ show matches)
 
   check uniqueItems $ \unique ->
     when (unique && not allUnique) $
