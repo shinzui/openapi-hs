@@ -10,7 +10,7 @@ import Prelude.Compat
 
 import Data.Kind (Type)
 
-import Control.Lens hiding (allOf)
+import Control.Lens hiding (allOf, anyOf)
 import Data.Data.Lens (template)
 
 import Control.Applicative ((<|>))
@@ -391,7 +391,8 @@ sketchSchema = sketch . toJSON
       & type_   ?~ OpenApiTypeSingle OpenApiArray
       & items ?~ case ischema of
           Just s -> OpenApiItemsObject (Inline s)
-          _      -> OpenApiItemsArray (map Inline ys)
+          -- heterogeneous array: collapse to an anyOf element schema (TODO(EP-4): prefixItems)
+          _      -> OpenApiItemsObject (Inline (mempty & anyOf ?~ map Inline ys))
       where
         ys = map go (V.toList xs)
         allSame = and ((zipWith (==)) ys (tail ys))
@@ -557,7 +558,7 @@ sketchStrictSchema = go . toJSON
       & type_       ?~ OpenApiTypeSingle OpenApiArray
       & maxItems    ?~ fromIntegral sz
       & minItems    ?~ fromIntegral sz
-      & items       ?~ OpenApiItemsArray (map (Inline . go) (V.toList xs))
+      & items       ?~ OpenApiItemsObject (Inline (mempty & anyOf ?~ map (Inline . go) (V.toList xs)))
       & uniqueItems ?~ allUnique
       & enum_       ?~ [js]
       where
@@ -908,7 +909,7 @@ paramSchemaToSchema = toParamSchema
 nullarySchema :: Schema
 nullarySchema = mempty
   & type_ ?~ OpenApiTypeSingle OpenApiArray
-  & items ?~ OpenApiItemsArray []
+  & maxItems ?~ 0
 
 gtoNamedSchema :: GToSchema f => SchemaOptions -> Proxy f -> NamedSchema
 gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
@@ -938,7 +939,8 @@ instance (Selector s, GToSchema f, GToSchema (S1 s f)) => GToSchema (C1 c (S1 s 
     | unwrapUnaryRecords opts = fieldSchema
     | otherwise =
         case schema ^. items of
-          Just (OpenApiItemsArray [_]) -> fieldSchema
+          Just (OpenApiItemsObject (Inline s))
+            | Just [_] <- s ^. anyOf -> fieldSchema
           _ -> do
             -- We have to run recordSchema instead of just using its defs,
             -- since those can be recursive and will lead to infinite loop,
@@ -969,10 +971,20 @@ gdeclareSchemaRef opts proxy = do
       return $ Ref (Reference name)
     _ -> Inline <$> gdeclareSchema opts proxy
 
+-- | Accumulate tuple-member schemas into a single @items@ object whose element
+-- schema is the @anyOf@ of the members (with @minItems@/@maxItems@ tracked by the
+-- caller). This is the conservative 3.1 representation of a tuple under Strategy A:
+-- "an array of N elements, each of which is one of the member types". @anyOf@ (not
+-- @oneOf@) is required because member types can overlap (e.g. Integer and Number),
+-- which would make @oneOf@ reject a valid integer for matching more than one branch.
+-- TODO(EP-4): switch tuple derivation to @prefixItems@ for true positional validation.
 appendItem :: Referenced Schema -> Maybe OpenApiItems -> Maybe OpenApiItems
-appendItem x Nothing = Just (OpenApiItemsArray [x])
-appendItem x (Just (OpenApiItemsArray xs)) = Just (OpenApiItemsArray (xs ++ [x]))
-appendItem _ _ = error "GToSchema.appendItem: cannot append to OpenApiItemsObject"
+appendItem x Nothing =
+  Just (OpenApiItemsObject (Inline (mempty & anyOf ?~ [x])))
+appendItem x (Just (OpenApiItemsObject (Inline s))) =
+  Just (OpenApiItemsObject (Inline (s & anyOf %~ Just . maybe [x] (++ [x]))))
+appendItem _ (Just _) =
+  error "GToSchema.appendItem: cannot append to a non-tuple items value"
 
 withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) =>
   SchemaOptions -> proxy s f -> Bool -> Schema -> Declare (Definitions Schema) Schema

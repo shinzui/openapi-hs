@@ -471,15 +471,23 @@ data ISPair = ISPair Integer String
 
 instance ToSchema ISPair
 
+-- Under OpenAPI 3.1 (Strategy A), the old tuple @items: [..]@ array is not
+-- representable; EP-3 conservatively collapses tuple derivation to a single
+-- @items@ object whose element is the @anyOf@ of the members (@anyOf@ rather than
+-- @oneOf@ so overlapping member types like Integer/Number still validate).
+-- TODO(EP-4): switch tuple derivation to @prefixItems@ and restore positional shape.
 ispairSchemaJSON :: Value
 ispairSchemaJSON = [aesonQQ|
 {
   "type": "array",
   "items":
-    [
-      { "type": "integer" },
-      { "type": "string"  }
-    ],
+    {
+      "anyOf":
+        [
+          { "type": "integer" },
+          { "type": "string"  }
+        ]
+    },
   "minItems": 2,
   "maxItems": 2
 }

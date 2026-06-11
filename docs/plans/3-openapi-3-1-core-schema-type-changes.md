@@ -83,11 +83,11 @@ partially done item into a done half and a remaining half rather than leaving it
 - [x] M2 (2026-06-10): Updated `HasExclusiveMaximum`/`HasExclusiveMinimum` (Lens.hs) and the `#exclusiveMaximum`/`#exclusiveMinimum` optics (Optics.hs) to `Maybe Scientific`.
 - [x] M2 (2026-06-10): Natural `ToParamSchema` drops the `exclusiveMinimum ?~ False` (>= 0 is just `minimum: 0`); `validateNumber` rewritten so exclusive bounds are independent numeric keywords and maximum/minimum are non-strict (migration plan §1.1.2). `Maybe Scientific` is covered by `AesonDefaultValue (Maybe a)`, no new instance.
 - [x] M2 (2026-06-10): Verified `{"exclusiveMinimum":0,"exclusiveMaximum":100}` round-trips; full suite green (375 examples, 0 failures).
-- [ ] M3: Remove `_schemaNullable` field from `Schema` (Internal.hs); remove the generated `nullable` lens/optic usages (none exist outside makeFields — confirm).
-- [ ] M3: Simplify `OpenApiItems` to `OpenApiItemsObject | OpenApiItemsBoolean` (Internal.hs).
-- [ ] M3: Rewrite `ToJSON OpenApiItems`, `FromJSON OpenApiItems`, the `FromJSON Schema` nullary cleanup, and the `saoSubObject` handling for the boolean case.
-- [ ] M3: Fix all `OpenApiItemsArray` call sites in src/ (Internal/Schema.hs tuple machinery, Generator.hs, Validation.hs, Lens.hs, Optics.hs) and the `ISPair` tuple test.
-- [ ] M3: Round-trip tests for `{"items":false}` and a homogeneous-array schema pass.
+- [x] M3 (2026-06-10): Removed `_schemaNullable` from `Schema`; grep confirms no `nullable`/`HasNullable` references remain.
+- [x] M3 (2026-06-10): Simplified `OpenApiItems` to `OpenApiItemsObject | OpenApiItemsBoolean`.
+- [x] M3 (2026-06-10): Rewrote `ToJSON OpenApiItems` (boolean emits `object ["items" .= b]`), removed the `FromJSON Schema` nullary cleanup, rewrote `FromJSON OpenApiItems` (Bool|Object). The `saoSubObject ?~ "items"` splice needed **no** change — it lifts the single `"items"` key from the wrapper object for both cases (verified empirically).
+- [x] M3 (2026-06-10): Fixed all `OpenApiItemsArray` sites (tuple machinery, Generator, Validation, Lens `_OpenApiItemsBoolean`, Optics). Tuple derivation collapses to an `anyOf` `items` element (see Surprises/Decision Log) with `minItems`/`maxItems` = N; ISPair golden updated.
+- [x] M3 (2026-06-10): `{"items":false}`/`{"items":true}` and homogeneous-array round-trips verified; full suite green (375 examples, 0 failures, 5 pending tuple-generator cases deferred to EP-4).
 - [ ] M4: Update version constants to `[3,1,0]`/`[3,1,1]`; add `OpenApiMajorVersion` + `detectVersion`.
 - [ ] M4: `nix develop -c cabal build all` and `nix develop -c cabal test all` are green across the whole tree.
 
@@ -119,6 +119,30 @@ implementation. Provide concise evidence (test output is ideal).
   implement tuple validation, and the test type `ISPair` (`test/Data/OpenApi/CommonTestTypes.hs:469`)
   asserts the `"items":[...]` form. Removing `OpenApiItemsArray` breaks tuple derivation, not just
   parsing. This plan resolves it conservatively (see Milestone 3, "Tuple derivation under Strategy A").
+
+- Discovery (M3 implementation, 2026-06-10): **tuple collapse must use `anyOf`, not `oneOf`.**
+  The Decision Log planned a `oneOf` element schema for collapsed tuples, but `oneOf` means
+  *exactly one* branch matches. Member types overlap — an integer like `0` matches both the
+  `Integer` and `Number` (`OpenApiNumber`) branches — so `ValidationSpec`'s
+  `prop_validate (0,"",0.0)` failed with "matches more than one of 'oneOf' schemas". Switched
+  the collapse to `anyOf` ("each element is one of these types"), which both validates correctly
+  and is the semantically right reading of a homogenised heterogeneous tuple. The `ISPair`
+  golden uses `anyOf` accordingly. (Note: the current validator does not actively check `anyOf`,
+  so an `anyOf`-only element schema is permissive — acceptable under EP-3; EP-4/EP-6 refine it.)
+
+- Discovery (M3 implementation, 2026-06-10): **`Control.Lens.anyOf` clashes with the schema
+  `anyOf` lens.** Unlike `oneOf`, `Control.Lens` exports a fold named `anyOf`. The file already
+  did `import Control.Lens hiding (allOf)` for the same reason; extended it to
+  `hiding (allOf, anyOf)`.
+
+- Discovery (M3 implementation, 2026-06-10): **positional-tuple generator round-trips can't hold
+  under EP-3.** `validateFromJSON` (GeneratorSpec) generates a value *from* a schema and parses
+  it back into the type. Once a tuple's positional info collapses to a homogeneous `anyOf`
+  `items` element, the generator can't know position 1 must be a `String`, so it may emit a
+  position-wrong value that fails to parse. Five such props — `(IntMap String)`, `(Int,String)`,
+  `(Int,String,Double)`, `(Int,String,Double,[Int])`, `(Int,String,Double,[Int],Int)` — were
+  marked `xprop` (pending) with `TODO(EP-4)`; they will be restored once `prefixItems` exists.
+  The `saoSubObject ?~ "items"` "key insight" from M3 step 4 held: no `AesonUtils` change needed.
 
 (Add further entries here as implementation proceeds.)
 

@@ -56,23 +56,13 @@ makePrisms ''Referenced
 
 -- ** 'OpenApiItems' prisms
 
-_OpenApiItemsArray :: Review OpenApiItems [Referenced Schema]
-_OpenApiItemsArray
-  = unto (\x -> OpenApiItemsArray x)
-{- \x -> case x of
-      OpenApiItemsPrimitive c p -> Left (OpenApiItemsPrimitive c p)
-      OpenApiItemsObject o      -> Left (OpenApiItemsObject o)
-      OpenApiItemsArray a       -> Right a
--}
+_OpenApiItemsBoolean :: Review OpenApiItems Bool
+_OpenApiItemsBoolean
+  = unto (\x -> OpenApiItemsBoolean x)
 
 _OpenApiItemsObject :: Review OpenApiItems (Referenced Schema)
 _OpenApiItemsObject
   = unto (\x -> OpenApiItemsObject x)
-{- \x -> case x of
-      OpenApiItemsPrimitive c p -> Left (OpenApiItemsPrimitive c p)
-      OpenApiItemsObject o      -> Right o
-      OpenApiItemsArray a       -> Left (OpenApiItemsArray a)
--}
 
 -- =============================================================
 -- More helpful instances for easier access to schema properties

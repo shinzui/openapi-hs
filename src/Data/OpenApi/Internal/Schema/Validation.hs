@@ -355,11 +355,11 @@ validateArray xs = do
       invalid ("array is too short (size should be >=" ++ show n ++ ")")
 
   check items $ \case
-    OpenApiItemsObject itemSchema      -> traverse_ (validateWithSchemaRef itemSchema) xs
-    OpenApiItemsArray itemSchemas -> do
-      when (len /= length itemSchemas) $
-        invalid ("array size is invalid (should be exactly " ++ show (length itemSchemas) ++ ")")
-      sequenceA_ (zipWith validateWithSchemaRef itemSchemas (Vector.toList xs))
+    OpenApiItemsObject itemSchema -> traverse_ (validateWithSchemaRef itemSchema) xs
+    -- items: false forbids any array elements; items: true allows anything.
+    OpenApiItemsBoolean b ->
+      when (not b && not (Vector.null xs)) $
+        invalid "array must be empty (items: false)"
 
   check uniqueItems $ \unique ->
     when (unique && not allUnique) $

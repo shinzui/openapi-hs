@@ -145,15 +145,15 @@ makePrismLabels ''Referenced
 -- OpenApiItems prisms
 
 instance
-  ( a ~ [Referenced Schema]
-  , b ~ [Referenced Schema]
-  ) => LabelOptic "_OpenApiItemsArray"
+  ( a ~ Bool
+  , b ~ Bool
+  ) => LabelOptic "_OpenApiItemsBoolean"
          A_Review
          OpenApiItems
          OpenApiItems
          a
          b where
-  labelOptic = unto (\x -> OpenApiItemsArray x)
+  labelOptic = unto (\x -> OpenApiItemsBoolean x)
   {-# INLINE labelOptic #-}
 
 instance

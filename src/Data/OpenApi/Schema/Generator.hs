@@ -65,9 +65,8 @@ schemaGen defns schema =
                   arrayLength <- choose (minLength', max minLength' maxLength')
                   generatedArray <- vectorOf arrayLength $ schemaGen defns itemSchema
                   return . Array $ V.fromList generatedArray
-              OpenApiItemsArray refs ->
-                  let itemGens = schemaGen defns . dereference defns <$> refs
-                  in fmap (Array . V.fromList) $ sequence itemGens
+              -- items: true  -> any element allowed; items: false -> no elements.
+              OpenApiItemsBoolean _ -> pure $ Array V.empty
         | otherwise -> pure $ Array V.empty
       Just OpenApiString -> do
         size <- getSize

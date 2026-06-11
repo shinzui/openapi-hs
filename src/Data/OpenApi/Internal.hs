@@ -575,17 +575,18 @@ data Link = Link
   , _linkServer :: Maybe Server
   } deriving (Eq, Show, Generic, Typeable, Data)
 
--- | Items for @'OpenApiArray'@ schemas.
+-- | The @items@ keyword. In OpenAPI 3.1 / JSON Schema 2020-12, @items@ is a single
+-- schema or a boolean (@items: false@ means "no additional array items are allowed").
 --
--- __Warning__: OpenAPI 3.0 does not support tuple arrays. However, OpenAPI 3.1 will, as
--- it will incorporate Json Schema mostly verbatim.
+-- @'OpenApiItemsObject'@ specifies the schema every array element must satisfy.
 --
--- @'OpenApiItemsObject'@ should be used to specify homogenous array @'Schema'@s.
+-- @'OpenApiItemsBoolean'@ specifies @items: true@ or @items: false@.
 --
--- @'OpenApiItemsArray'@ should be used to specify tuple @'Schema'@s.
+-- Tuple validation (the old @items: [schema, ...]@ array form) moved to @prefixItems@,
+-- added in a later plan. TODO(EP-4): re-introduce tuple support via @prefixItems@.
 data OpenApiItems where
-  OpenApiItemsObject    :: Referenced Schema   -> OpenApiItems
-  OpenApiItemsArray     :: [Referenced Schema] -> OpenApiItems
+  OpenApiItemsObject  :: Referenced Schema -> OpenApiItems
+  OpenApiItemsBoolean :: Bool              -> OpenApiItems
   deriving (Eq, Show, Typeable, Data)
 
 data OpenApiType where
@@ -635,7 +636,6 @@ data Schema = Schema
   , _schemaDescription :: Maybe Text
   , _schemaRequired :: [ParamName]
 
-  , _schemaNullable :: Maybe Bool
   , _schemaAllOf :: Maybe [Referenced Schema]
   , _schemaOneOf :: Maybe [Referenced Schema]
   , _schemaNot :: Maybe (Referenced Schema)
@@ -1368,24 +1368,13 @@ instance ToJSON Header where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
--- | As for nullary schema for 0-arity type constructors, see
--- <https://github.com/GetShopTV/swagger2/issues/167>.
---
--- >>> BSL.putStrLn $ encodePretty (OpenApiItemsArray [])
--- {
---     "example": [],
---     "items": {},
---     "maxItems": 0
--- }
---
+-- | Both cases wrap the value in a single @"items"@ key. The @ToJSON Schema@
+-- instance uses @saoSubObject ?~ "items"@, which lifts that single key up into the
+-- parent schema object — so an object emits @"items": {..}@ and a boolean emits
+-- @"items": true|false@.
 instance ToJSON OpenApiItems where
-  toJSON (OpenApiItemsObject x) = object [ "items" .= x ]
-  toJSON (OpenApiItemsArray  []) = object
-    [ "items" .= object []
-    , "maxItems" .= (0 :: Int)
-    , "example" .= Array mempty
-    ]
-  toJSON (OpenApiItemsArray  x) = object [ "items" .= x ]
+  toJSON (OpenApiItemsObject x)  = object [ "items" .= x ]
+  toJSON (OpenApiItemsBoolean b) = object [ "items" .= b ]
 
 instance ToJSON Components where
   toJSON = sopSwaggerGenericToJSON
@@ -1523,24 +1512,15 @@ instance FromJSON SecurityScheme where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON Schema where
-  parseJSON = fmap nullaryCleanup . sopSwaggerGenericParseJSON
-    where nullaryCleanup :: Schema -> Schema
-          nullaryCleanup s =
-            if _schemaItems s == Just (OpenApiItemsArray [])
-              then s { _schemaExample = Nothing
-                     , _schemaMaxItems = Nothing
-                     }
-              else s
+  parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON Header where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON OpenApiItems where
-  parseJSON js@(Object obj)
-      | null obj  = pure $ OpenApiItemsArray [] -- Nullary schema.
-      | otherwise = OpenApiItemsObject <$> parseJSON js
-  parseJSON js@(Array _)  = OpenApiItemsArray  <$> parseJSON js
-  parseJSON _ = empty
+  parseJSON (Bool b)      = pure (OpenApiItemsBoolean b)
+  parseJSON js@(Object _) = OpenApiItemsObject <$> parseJSON js
+  parseJSON _ = fail "items must be a schema object or a boolean"
 
 instance FromJSON Components where
   parseJSON = sopSwaggerGenericParseJSON
