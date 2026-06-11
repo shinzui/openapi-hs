@@ -167,6 +167,7 @@ test-suite spec
     Data.OpenApi.Schema.GeneratorSpec
     Data.OpenApi.Schema.CoreTypes31Spec
     Data.OpenApi.Schema31Spec
+    Data.OpenApi.TopLevel31Spec
   default-language: Haskell2010
 
 executable example

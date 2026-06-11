@@ -69,6 +69,11 @@ data OpenApi = OpenApi
     -- | The available paths and operations for the API.
   , _openApiPaths :: InsOrdHashMap FilePath PathItem
 
+    -- | The incoming webhooks that MAY be received as part of this API,
+    -- and that the API consumer MAY choose to implement. (OpenAPI 3.1)
+    -- Each value is a Path Item Object or a Reference Object.
+  , _openApiWebhooks :: InsOrdHashMap Text (Referenced PathItem)
+
     -- | An element to hold various schemas for the specification.
   , _openApiComponents :: Components
 
@@ -122,6 +127,9 @@ data Info = Info
   { -- | The title of the API.
     _infoTitle :: Text
 
+    -- | A short summary of the API. (OpenAPI 3.1)
+  , _infoSummary :: Maybe Text
+
     -- | A short description of the API.
     -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
   , _infoDescription :: Maybe Text
@@ -157,12 +165,22 @@ data License = License
   { -- | The license name used for the API.
     _licenseName :: Text
 
+    -- | An [SPDX](https://spdx.org/licenses/) license expression for the API,
+    -- e.g. @"MIT"@ or @"Apache-2.0"@. (OpenAPI 3.1)
+    --
+    -- The OpenAPI 3.1 specification states that @identifier@ and '_licenseUrl'
+    -- are mutually exclusive: a license is identified by /either/ an SPDX
+    -- identifier /or/ a URL, never both. This library does not enforce that
+    -- constraint at decode time (see EP-5 Decision Log); it round-trips
+    -- whatever is present.
+  , _licenseIdentifier :: Maybe Text
+
     -- | A URL to the license used for the API.
   , _licenseUrl :: Maybe URL
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 instance IsString License where
-  fromString s = License (fromString s) Nothing
+  fromString s = License (fromString s) Nothing Nothing
 
 -- | An object representing a Server.
 data Server = Server
@@ -220,8 +238,13 @@ data Components = Components
 -- The path itself is still exposed to the documentation viewer
 -- but they will not know which operations and parameters are available.
 data PathItem = PathItem
-  { -- | An optional, string summary, intended to apply to all operations in this path.
-    _pathItemSummary :: Maybe Text
+  { -- | A reference (@$ref@) to an externally-defined Path Item Object,
+    -- whose definition replaces this one, with 'summary' and 'description'
+    -- providing optional overrides. (OpenAPI 3.1)
+    _pathItemRef :: Maybe Text
+
+    -- | An optional, string summary, intended to apply to all operations in this path.
+  , _pathItemSummary :: Maybe Text
 
     -- | An optional, string description, intended to apply to all operations in this path.
     -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
@@ -1457,9 +1480,14 @@ instance ToJSON Operation where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
+-- | @PathItem@'s only @$@-prefixed key. Reuses EP-4's shared helper (IP-3).
+pathItemDollarKeyRenames :: [(Text, Text)]
+pathItemDollarKeyRenames = [ ("ref", "$ref") ]
+
 instance ToJSON PathItem where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = applyKeyRenamesToJSON pathItemDollarKeyRenames . sopSwaggerGenericToJSON
+  -- No hand-rolled toEncoding: it would bypass the $ref rename pass; let aeson
+  -- derive toEncoding from toJSON so the rename always runs.
 
 instance ToJSON RequestBody where
   toJSON = sopSwaggerGenericToJSON
@@ -1499,6 +1527,7 @@ instance ToJSON (Referenced Example)  where toJSON = referencedToJSON "#/compone
 instance ToJSON (Referenced Header)   where toJSON = referencedToJSON "#/components/headers/"
 instance ToJSON (Referenced Link)     where toJSON = referencedToJSON "#/components/links/"
 instance ToJSON (Referenced Callback) where toJSON = referencedToJSON "#/components/callbacks/"
+instance ToJSON (Referenced PathItem) where toJSON = referencedToJSON "#/components/pathItems/"
 
 instance ToJSON AdditionalProperties where
   toJSON (AdditionalPropertiesAllowed b) = toJSON b
@@ -1606,7 +1635,8 @@ instance FromJSON Operation where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON PathItem where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = withObject "PathItem" $ \o ->
+    sopSwaggerGenericParseJSON (Object (applyKeyRenamesParseJSON pathItemDollarKeyRenames o))
 
 instance FromJSON SecurityDefinitions where
   parseJSON js = SecurityDefinitions <$> parseJSON js
@@ -1653,6 +1683,7 @@ instance FromJSON (Referenced Example)  where parseJSON = referencedParseJSON "#
 instance FromJSON (Referenced Header)   where parseJSON = referencedParseJSON "#/components/headers/"
 instance FromJSON (Referenced Link)     where parseJSON = referencedParseJSON "#/components/links/"
 instance FromJSON (Referenced Callback) where parseJSON = referencedParseJSON "#/components/callbacks/"
+instance FromJSON (Referenced PathItem) where parseJSON = referencedParseJSON "#/components/pathItems/"
 
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")

@@ -112,7 +112,7 @@ migration plan itself; see Decision Log). See the Decision Log for the full reco
 | 2 | Rename Package to openapi-hs | docs/plans/2-rename-package-to-openapi-hs.md | None | EP-1 | Complete |
 | 3 | OpenAPI 3.1 Core Schema Type Changes | docs/plans/3-openapi-3-1-core-schema-type-changes.md | None | EP-1 | Complete |
 | 4 | OpenAPI 3.1 JSON Schema Fields and Reference Keywords | docs/plans/4-openapi-3-1-json-schema-fields-and-reference-keywords.md | EP-3 | EP-1 | Complete |
-| 5 | OpenAPI 3.1 Top-Level Object Features | docs/plans/5-openapi-3-1-top-level-object-features.md | EP-3 | EP-4 | Not Started |
+| 5 | OpenAPI 3.1 Top-Level Object Features | docs/plans/5-openapi-3-1-top-level-object-features.md | EP-3 | EP-4 | Complete |
 | 6 | OpenAPI 3.1 Schema Validation | docs/plans/6-openapi-3-1-schema-validation.md | EP-3, EP-4 | None | Not Started |
 | 7 | OpenAPI 3.1 Migration Helpers, Tests, and Release | docs/plans/7-openapi-3-1-migration-helpers-tests-and-release.md | EP-3, EP-4, EP-5 | EP-2, EP-6 | Not Started |
 
@@ -233,8 +233,8 @@ milestones complete.
 - [x] EP-4: Spike + decide `$ref`-with-siblings and boolean-schema representation; build the `$`-key serialization helper (2026-06-10)
 - [x] EP-4: Add JSON Schema fields (`prefixItems`, `const`, conditionals, `contains*`, `unevaluated*`, content*, `examples`) (2026-06-10)
 - [x] EP-4: Add `$id`/`$anchor`/`$defs`/`$ref`/`$dynamicRef`/`$dynamicAnchor`; round-trip all new fields (2026-06-10)
-- [ ] EP-5: Add `webhooks` to `OpenApi`; `summary` to `Info`; `identifier` to `License`; `$ref` to `PathItem`
-- [ ] EP-5: Round-trip top-level features; reuse EP-4's `$`-key helper
+- [x] EP-5: Add `webhooks` to `OpenApi`; `summary` to `Info`; `identifier` to `License`; `$ref` to `PathItem` (2026-06-10)
+- [x] EP-5: Round-trip top-level features; reuse EP-4's `$`-key helper (2026-06-10)
 - [ ] EP-6: Validate type arrays, `prefixItems`, `contains`/`minContains`/`maxContains`, `if`/`then`/`else`, `const`
 - [ ] EP-7: Implement `Value`-layer 3.0→3.1 migration helpers; migration tests pass
 - [ ] EP-7: Comprehensive 3.1 test suite; `MIGRATION_3.0_TO_3.1.md`; bump to 4.0.0; CHANGELOG; module docs
@@ -303,6 +303,12 @@ implementation.
   `webhooks` but, because it may run before EP-4 completes, ships a minimal local `renameKey`
   helper marked `TODO(EP-4)`. When both are done, EP-5's `renameKey` must be replaced by EP-4's
   shared helper and the `TODO(EP-4)` removed — this is the consolidation step of IP-3.
+  **RESOLVED (2026-06-10): EP-4 landed before EP-5, so EP-5 never shipped the stop-gap.**
+  `PathItem.$ref` consumes EP-4's `applyKeyRenamesToJSON`/`applyKeyRenamesParseJSON` directly
+  (table `pathItemDollarKeyRenames = [("ref","$ref")]`); no `renameKey`/`TODO(EP-4)` was ever
+  introduced. `webhooks` values are `Referenced PathItem` and round-trip through the existing
+  `referencedToJSON`/`referencedParseJSON` (their `$ref` is handled by those, not the rename
+  pass). IP-3 is fully consolidated.
 
 - **Discovery (during plan authoring, 2026-06-10): stale `HasSwaggerAesonOptions Schema`
   option.** The `ToJSON Schema` instance uses `saoSubObject ?~ "items"`, but a separate

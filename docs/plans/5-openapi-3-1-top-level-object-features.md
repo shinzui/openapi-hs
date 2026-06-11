@@ -85,21 +85,12 @@ Use a checklist to summarize granular steps. Every stopping point must be docume
 even if it requires splitting a partially completed task into two ("done" vs. "remaining").
 This section must always reflect the actual current state of the work.
 
-- [ ] M1: Add `_infoSummary :: Maybe Text` to `Info`; lens via `makeFields`; optic; update
-      `Info` test example/JSON; round-trip an `Info` carrying `summary`.
-- [ ] M1: Add `_licenseIdentifier :: Maybe Text` to `License`; fix the `IsString License`
-      instance; lens via `makeFields`; optic; update `License` test example/JSON; round-trip
-      `{"name":"...","identifier":"MIT"}`.
-- [ ] M1: Decide and document `License.identifier`-vs-`url` mutual exclusivity (document-only
-      for this plan; see Decision Log).
-- [ ] M2: Add `_openApiWebhooks :: InsOrdHashMap Text (Referenced PathItem)` to `OpenApi`;
-      add `ToJSON`/`FromJSON (Referenced PathItem)`; lens via `makeFields`; optic; round-trip
-      the `{"webhooks":{"newPet":{"post":{...}}}}` fragment.
-- [ ] M3: Add `_pathItemRef :: Maybe Text` to `PathItem`; lens via `makeLensesWith
-      swaggerFieldRules`; optic; implement `$ref`-key emit/parse (reuse EP-4 helper if present,
-      else local fallback + `TODO(EP-4)`); round-trip a `PathItem` with `$ref` + `summary`.
-- [ ] Final: `nix develop -c cabal build all` and `nix develop -c cabal test all` both pass;
-      no compile warnings introduced for the new fields; update master-plan EP-5 rows.
+- [x] M1 (2026-06-10): Added `_infoSummary :: Maybe Text` to `Info` (after `_infoTitle`); lens/optic auto-derived; round-trips via `decode . encode`.
+- [x] M1 (2026-06-10): Added `_licenseIdentifier :: Maybe Text` to `License` (between name and url); fixed the positional `IsString License` (`License (fromString s) Nothing Nothing`); round-trips `{"name":"MIT","identifier":"MIT"}`.
+- [x] M1 (2026-06-10): Documented `identifier`-vs-`url` mutual exclusivity in the `License` Haddock (not enforced; see Decision Log).
+- [x] M2 (2026-06-10): Added `_openApiWebhooks :: InsOrdHashMap Text (Referenced PathItem)` to `OpenApi`; added `ToJSON`/`FromJSON (Referenced PathItem)` (`#/components/pathItems/` prefix); round-trips an inline webhook, and a `$ref` webhook value decodes to `Ref`.
+- [x] M3 (2026-06-10): Added `_pathItemRef :: Maybe Text` to `PathItem` (front of record); wired `ToJSON`/`FromJSON PathItem` through **EP-4's** `applyKeyRenamesToJSON`/`applyKeyRenamesParseJSON` with `pathItemDollarKeyRenames = [("ref","$ref")]` (IP-3 consolidation — no local fallback). Removed `PathItem`'s hand-rolled `toEncoding` so the rename pass applies (see Surprises). Emits literal `"$ref"`.
+- [x] Final (2026-06-10): `cabal build all` (lib + example) and `cabal test all` pass — 432 examples, 0 failures, 5 pending (EP-3 tuple cases). New spec `test/Data/OpenApi/TopLevel31Spec.hs` registered.
 
 
 ## Surprises & Discoveries
@@ -107,7 +98,28 @@ This section must always reflect the actual current state of the work.
 Document unexpected behaviors, bugs, optimizations, or insights discovered during
 implementation. Provide concise evidence.
 
-(None yet.)
+- **EP-4 was already landed, so M3 used the shared helper, not the fallback (2026-06-10).** The
+  plan was written when EP-4 was a skeleton and described a local `renameKey` stop-gap. By the
+  time EP-5 ran, EP-4's `applyKeyRenamesToJSON`/`applyKeyRenamesParseJSON` existed in
+  `Data.OpenApi.Internal.AesonUtils`, so `PathItem` reuses them with a one-row table
+  `pathItemDollarKeyRenames = [("ref","$ref")]`. This is the IP-3 consolidation; no `TODO(EP-4)`
+  marker was introduced.
+
+- **`PathItem` had a hand-rolled `toEncoding` that bypassed the rename pass (2026-06-10).** The
+  original `instance ToJSON PathItem` defined both `toJSON = sopSwaggerGenericToJSON` and
+  `toEncoding = sopSwaggerGenericToEncoding`. Applying the `$ref` rename only to `toJSON` would
+  have left `toEncoding` emitting the bare `"ref"` key — and `SpecCommon`'s `(<=>)` exercises the
+  `toEncoding` round-trip. Fix: drop the explicit `toEncoding` so aeson derives it from `toJSON`,
+  guaranteeing the rename always runs. (Same rule EP-4 applied to `ToJSON Schema`.)
+
+- **No existing fixtures needed editing (2026-06-10).** Because the new `Info`/`License`/`OpenApi`
+  fields default to `Nothing`/empty and are omitted, the pre-existing `infoExample`,
+  `licenseExample`, and the petstore round-trips kept passing unchanged. New coverage went into a
+  dedicated `TopLevel31Spec` module instead of mutating the large `OpenApiSpec` fixtures.
+
+- **`Control.Lens.(.=)` vs `Data.Aeson.(.=)` clash in the new test (2026-06-10).** The spec uses
+  both lens operators and aeson `object [ k .= v ]`; resolved with
+  `import Control.Lens hiding ((.=))`.
 
 
 ## Decision Log
@@ -152,7 +164,22 @@ Record every decision made while working on the plan.
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion.
 Compare the result against the original purpose.
 
-(To be filled during and after implementation.)
+**Completed 2026-06-10.** All four 3.1 top-level features round-trip:
+
+- `Info.summary` (`Maybe Text`), `License.identifier` (SPDX, `Maybe Text`, with a Haddock note
+  on `url` mutual-exclusivity — documented, not enforced).
+- `OpenApi.webhooks :: InsOrdHashMap Text (Referenced PathItem)` with `ToJSON`/`FromJSON
+  (Referenced PathItem)` under `#/components/pathItems/`; inline and `$ref` webhook values both
+  work.
+- `PathItem.$ref` emits/parses the literal `"$ref"` key via EP-4's shared `$`-key helper.
+
+`cabal build all` + `cabal test all`: 432 examples, 0 failures, 5 pending. No regressions; no
+fixtures rewritten (new fields are omitted when empty).
+
+**Integration points honoured:** IP-2 (no `Schema`/`OpenApiItems` edits) and IP-3 (consumed
+EP-4's helper rather than duplicating it). **Gaps:** `License.identifier`/`url` exclusivity is
+not validated (left to EP-6/EP-7 if desired); webhook/path-item `$ref` resolution (following the
+reference) is a validation concern, out of scope here — round-trip fidelity was the bar and is met.
 
 
 ## Context and Orientation
