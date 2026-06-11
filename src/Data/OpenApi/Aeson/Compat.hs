@@ -41,6 +41,9 @@ fromInsOrdHashMap = KeyMap.fromList . fmap (first Key.fromText) . InsOrdHashMap.
 lookupKey :: T.Text -> KeyMap.KeyMap v -> Maybe v
 lookupKey = KeyMap.lookup . Key.fromText
 
+insertKey :: T.Text -> v -> KeyMap.KeyMap v -> KeyMap.KeyMap v
+insertKey = KeyMap.insert . Key.fromText
+
 hasKey :: T.Text -> KeyMap.KeyMap a -> Bool
 hasKey = KeyMap.member . Key.fromText
 #else
@@ -70,6 +73,9 @@ fromInsOrdHashMap = InsOrdHashMap.toHashMap
 
 lookupKey :: T.Text -> HM.HashMap T.Text v -> Maybe v
 lookupKey = HM.lookup
+
+insertKey :: T.Text -> v -> HM.HashMap T.Text v -> HM.HashMap T.Text v
+insertKey = HM.insert
 
 hasKey :: T.Text -> HM.HashMap T.Text a -> Bool
 hasKey = HM.member

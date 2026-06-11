@@ -111,7 +111,7 @@ migration plan itself; see Decision Log). See the Decision Log for the full reco
 | 1 | Modernize Build Toolchain to Cabal and GHC 9.12 | docs/plans/1-modernize-build-toolchain-to-cabal-and-ghc-9-12.md | None | None | Complete |
 | 2 | Rename Package to openapi-hs | docs/plans/2-rename-package-to-openapi-hs.md | None | EP-1 | Complete |
 | 3 | OpenAPI 3.1 Core Schema Type Changes | docs/plans/3-openapi-3-1-core-schema-type-changes.md | None | EP-1 | Complete |
-| 4 | OpenAPI 3.1 JSON Schema Fields and Reference Keywords | docs/plans/4-openapi-3-1-json-schema-fields-and-reference-keywords.md | EP-3 | EP-1 | Not Started |
+| 4 | OpenAPI 3.1 JSON Schema Fields and Reference Keywords | docs/plans/4-openapi-3-1-json-schema-fields-and-reference-keywords.md | EP-3 | EP-1 | Complete |
 | 5 | OpenAPI 3.1 Top-Level Object Features | docs/plans/5-openapi-3-1-top-level-object-features.md | EP-3 | EP-4 | Not Started |
 | 6 | OpenAPI 3.1 Schema Validation | docs/plans/6-openapi-3-1-schema-validation.md | EP-3, EP-4 | None | Not Started |
 | 7 | OpenAPI 3.1 Migration Helpers, Tests, and Release | docs/plans/7-openapi-3-1-migration-helpers-tests-and-release.md | EP-3, EP-4, EP-5 | EP-2, EP-6 | Not Started |
@@ -230,9 +230,9 @@ milestones complete.
 - [x] EP-3: Introduce `OpenApiTypeValue`; change `_schemaType`; hand-written JSON instances round-trip type arrays (2026-06-10)
 - [x] EP-3: Change exclusive bounds to `Scientific`; remove `_schemaNullable`; simplify `OpenApiItems` to object|boolean (2026-06-10)
 - [x] EP-3: Update version constants to 3.1.x; fix all lenses/optics/compile errors; existing tests updated/pass (2026-06-10)
-- [ ] EP-4: Spike + decide `$ref`-with-siblings and boolean-schema representation; build the `$`-key serialization helper
-- [ ] EP-4: Add JSON Schema fields (`prefixItems`, `const`, conditionals, `contains*`, `unevaluated*`, content*, `examples`)
-- [ ] EP-4: Add `$id`/`$anchor`/`$defs`/`$ref`/`$dynamicRef`/`$dynamicAnchor`; round-trip all new fields
+- [x] EP-4: Spike + decide `$ref`-with-siblings and boolean-schema representation; build the `$`-key serialization helper (2026-06-10)
+- [x] EP-4: Add JSON Schema fields (`prefixItems`, `const`, conditionals, `contains*`, `unevaluated*`, content*, `examples`) (2026-06-10)
+- [x] EP-4: Add `$id`/`$anchor`/`$defs`/`$ref`/`$dynamicRef`/`$dynamicAnchor`; round-trip all new fields (2026-06-10)
 - [ ] EP-5: Add `webhooks` to `OpenApi`; `summary` to `Info`; `identifier` to `License`; `$ref` to `PathItem`
 - [ ] EP-5: Round-trip top-level features; reuse EP-4's `$`-key helper
 - [ ] EP-6: Validate type arrays, `prefixItems`, `contains`/`minContains`/`maxContains`, `if`/`then`/`else`, `const`
@@ -269,6 +269,10 @@ implementation.
   collapse to true `prefixItems`; (b) update the `ISPair` golden
   (`test/Data/OpenApi/CommonTestTypes.hs`, currently the `anyOf` form); and (c) restore those
   five props from `xprop` to `prop`. This concretises the next discovery's tuple note.
+  **STATUS (after EP-4, 2026-06-10): still OUTSTANDING.** EP-4 added the `prefixItems` *field*
+  but did not rewire generic tuple `ToSchema` derivation to use it, nor un-pend the five props.
+  The field now exists to support the switch; close this before/with the EP-7 release (or as a
+  dedicated follow-up). Tracked here so it is not lost.
 
 - **Discovery (EP-3 implementation, 2026-06-10): default OpenAPI version had to move to 3.1.0.**
   Beyond the version *bounds*, EP-3 bumped the `Monoid OpenApiSpecVersion` `mempty` and the

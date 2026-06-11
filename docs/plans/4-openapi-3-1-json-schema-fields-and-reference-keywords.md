@@ -53,16 +53,15 @@ Use a checklist to summarize granular steps. Every stopping point must be docume
 even if it requires splitting a partially completed task into two ("done" vs. "remaining").
 This section must always reflect the actual current state of the work.
 
-- [ ] M0 spike: decide whether `$ref`-with-siblings decodes to `Inline (Schema { _schemaRef = Just ... })` or stays at the `Referenced` layer, and record the audit of every `Inline`/`Ref` pattern-match site.
-- [ ] M0 spike: decide the boolean-schema representation (extend `Referenced`/`Schema` boolean decoding, OR a dedicated `BoolOr` sum) and record its blast radius.
-- [ ] M0 spike: design and place the canonical `$`-prefixed-key serialization helper; record its name, signature, and module (Integration Point IP-3).
-- [ ] M1: append the non-`$` JSON Schema fields to `Schema` (`const`, `prefixItems`, `contains`, `minContains`, `maxContains`, `if`/`then`/`else`, `dependentSchemas`, `dependentRequired`, `unevaluatedProperties`, `unevaluatedItems`, `propertyNames`, `contentEncoding`, `contentMediaType`, `contentSchema`, `examples`).
-- [ ] M1: add an `AesonDefaultValue` instance for every new field type that lacks one; add `{-# DEPRECATED _schemaExample ... #-}`.
-- [ ] M1: confirm derived lenses (`src/Data/OpenApi/Lens.hs`) and optics (`src/Data/OpenApi/Optics.hs`) exist for every M1 field; build passes.
-- [ ] M1: round-trip tests for every M1 keyword pass.
-- [ ] M2: append the `$`-prefixed fields (`_schemaId`, `_schemaAnchor`, `_schemaDefs`, `_schemaRef`, `_schemaDynamicRef`, `_schemaDynamicAnchor`) and wire them through the M0 helper.
-- [ ] M2: round-trip tests prove each `$`-prefixed JSON key survives `decode . encode` with the literal `$` key.
-- [ ] Whole plan: `nix develop -c cabal build all` and `nix develop -c cabal test all` succeed.
+- [x] M0 (2026-06-10): `$ref`-with-siblings confirmed — decodes to `Inline (Schema {_schemaRef = ...})`. Reworked `referencedParseJSON` (`Internal.hs`) which previously **failed** on any non-component `$ref` rather than falling to `Inline`: now `Ref` only when `$ref` is the sole key AND matches the component prefix; otherwise `Inline`.
+- [x] M0 (2026-06-10): boolean-schema read direction added to `referencedParseJSON` (`true → Inline mempty`, `false → Inline (mempty {_schemaNot = Just (Inline mempty)})`).
+- [x] M0 (2026-06-10): canonical `$`-key helper `applyKeyRenamesToJSON`/`applyKeyRenamesParseJSON` added to `src/Data/OpenApi/Internal/AesonUtils.hs` (+ `insertKey` in `Aeson/Compat.hs`); `schemaDollarKeyRenames` table in `Internal.hs` (IP-3).
+- [x] M1 (2026-06-10): appended the 17 non-`$` JSON Schema fields to `Schema`; `{-# DEPRECATED _schemaExample #-}` added. No `AesonDefaultValue` instances were needed (the `Maybe a` instance covers every new field).
+- [x] M1 (2026-06-10): derived lenses/optics exist; added `if_`/`then_`/`else_`/`id_`/`const_`/`contains_` to `swaggerFieldNamer` (`Internal/Utils.hs`) because those lens names are reserved keywords / Prelude/lens conflicts (JSON keys unaffected — see Surprises).
+- [x] M1 (2026-06-10): round-trip tests for `prefixItems`+`items:false`, `if`/`then`, `const`, `contains`+`minContains`, `examples` pass.
+- [x] M2 (2026-06-10): appended the 6 `$`-fields and wired `ToJSON`/`FromJSON Schema` through `applyKeyRenamesToJSON`/`applyKeyRenamesParseJSON` with `schemaDollarKeyRenames`.
+- [x] M2 (2026-06-10): `$defs`, `$id`+sibling-`$ref` (stays `Inline`), and pure component `$ref` (stays `Ref`) round-trips prove the literal `$` keys survive `decode . encode`.
+- [x] Whole plan (2026-06-10): `cabal build all` (lib + example) and `cabal test all` succeed — 417 examples, 0 failures, 5 pending (EP-3's tuple cases).
 
 
 ## Surprises & Discoveries
@@ -104,6 +103,32 @@ The Aeson-compat layer used throughout (`src/Data/OpenApi/Aeson/Compat.hs`) abst
 (`Key.fromString "$ref"`); nothing prevents constructing it — the only obstacle is that the
 *generic field-name → key* rule cannot emit it. That is exactly why the M0 helper injects such
 keys outside that rule.
+
+- **Surprise (M1 implementation, 2026-06-10): `if`/`then`/`else` are illegal *lens* names, and
+  `id`/`const`/`contains` collide with Prelude/`Control.Lens`.** The plan claimed `_schemaIf` →
+  `if` "derives normally". The JSON *key* does derive fine ("if"/"then"/"else"), but the TH lens
+  generator (`makeLensesWith swaggerFieldRules ''Schema`) tried to define a lens literally named
+  `else` and failed: `Illegal variable name: 'else'`. Fix: extend `swaggerFieldNamer`
+  (`src/Data/OpenApi/Internal/Utils.hs`) — the same place that already maps `type→type_`,
+  `enum→enum_`, `not→not_` — with `if→if_`, `then→then_`, `else→else_` (keywords) and
+  `id→id_`, `const→const_`, `contains→contains_` (Prelude/lens conflicts). The JSON keys are
+  produced by a *separate* rule (`AesonUtils` field-name modifier), so they remain "if"/"then"/
+  "else"/"id"/"const"/"contains"; only the lens accessors carry the trailing underscore (the
+  `#if`/`#const`/… optics labels are unaffected). EP-5 takes note: any new field whose plain
+  name is a keyword/Prelude name needs the same `fixName'` entry.
+
+- **Surprise (M0 implementation, 2026-06-10): `referencedParseJSON` *failed* on a non-component
+  `$ref`, it did not fall through to `Inline`.** The plan's seeded code assumed the existing body
+  fell to `Inline` when `$ref` didn't match the prefix; in fact it called `parseRef`, which
+  `fail`ed. The rework makes it produce `Ref` only when the object's **sole** key is `$ref` and
+  its value is under the component prefix (`KeyMap.size o == 1`), and `Inline` otherwise — which
+  is what enables `$ref`-with-siblings and non-component `$ref` (e.g. `#/$defs/A`). Existing
+  pure-component-`$ref` tests still parse to `Ref` (verified: the whole pre-existing suite stays
+  green).
+
+- **Note (M1, 2026-06-10): no new `AesonDefaultValue` instances were required.** Every added
+  field is `Maybe …`, covered by `instance AesonDefaultValue (Maybe a)`. The seeded list of
+  possible instances (`Value`, `Integer`, `Scientific`, `AdditionalProperties`) was not needed.
 
 (Further surprises to be recorded during implementation.)
 
@@ -186,7 +211,38 @@ must leave the final wording here.
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion.
 Compare the result against the original purpose.
 
-(To be filled during and after implementation.)
+**Completed 2026-06-10.** The `Schema` type now models the JSON Schema 2020-12 vocabulary used
+by OpenAPI 3.1:
+
+- 17 additive fields (`const`, `prefixItems`, `contains`/`min`/`maxContains`,
+  `if`/`then`/`else`, `dependentSchemas`/`dependentRequired`, `unevaluatedProperties`/`Items`,
+  `propertyNames`, `content*`, `examples`) and 6 `$`-keyword fields (`$id`, `$anchor`, `$defs`,
+  `$ref`, `$dynamicRef`, `$dynamicAnchor`) all decode/encode and round-trip.
+- The reusable `$`-key mechanism (`applyKeyRenamesToJSON`/`applyKeyRenamesParseJSON` in
+  `AesonUtils`, table `schemaDollarKeyRenames`) is in place for EP-5 to import (IP-3).
+- Boolean sub-schemas decode (`true`/`false` → canonical inline schemas) in any
+  `Referenced Schema` position; `$ref`-with-siblings stays `Inline` with `_schemaRef`.
+- `_schemaExample` is deprecated in favour of `_schemaExamples`.
+
+`cabal build all` + `cabal test all`: 417 examples, 0 failures, 5 pending. No regressions.
+
+**Gaps / deferred:**
+- Boolean sub-schemas are implemented in the **read** direction only; encoding re-emits the
+  object forms `{}` / `{"not":{}}` (semantically identical, per the Decision Log) rather than
+  bare `true`/`false`. A bare-literal write path is an optional fidelity nicety for a later plan.
+- Full `unevaluated*` semantics remain best-effort (validation is EP-6's concern; the
+  MasterPlan scopes `unevaluated*` to a documented approximation).
+- EP-4 also **completes** EP-3's tuple stub obligation only partially: it adds the `prefixItems`
+  *field*, but did **not** rewire generic tuple `ToSchema` derivation from EP-3's `anyOf`-`items`
+  collapse to `prefixItems`, nor un-pend the 5 `GeneratorSpec` tuple props. That generic-derivation
+  switch is still outstanding — see the MasterPlan Surprises (EP-3→EP-4 tuple note); it should be
+  picked up before the release (EP-7) or as a follow-up, since the `prefixItems` field now exists
+  to support it.
+
+**Deviations from the written plan:** the `if`/`then`/`else`/`id`/`const`/`contains` lens-name
+fix (Surprises) and the `referencedParseJSON` failure-vs-fallthrough correction (Surprises) were
+both unforeseen. Everything else landed as specified; IP-2 (append-only) and IP-3 (owns the
+`$`-key helper) are honoured.
 
 
 ## Context and Orientation

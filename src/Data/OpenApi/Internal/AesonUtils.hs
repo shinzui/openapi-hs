@@ -12,6 +12,9 @@ module Data.OpenApi.Internal.AesonUtils (
     saoPrefix,
     saoAdditionalPairs,
     saoSubObject,
+    -- * Dollar-prefixed keys (JSON Schema 2020-12: $id, $ref, $defs, …)
+    applyKeyRenamesToJSON,
+    applyKeyRenamesParseJSON,
     ) where
 
 import Prelude ()
@@ -23,7 +26,7 @@ import Control.Monad    (unless)
 import Data.Aeson       (ToJSON(..), FromJSON(..), Value(..), Object, object, (.:), (.:?), (.!=), withObject, Encoding, pairs, (.=), Series)
 import Data.Aeson.Types (Parser, Pair)
 import Data.Char        (toLower, isUpper)
-import Data.Foldable    (traverse_)
+import Data.Foldable    (traverse_, foldl')
 import Data.Text        (Text)
 
 import Generics.SOP
@@ -33,7 +36,34 @@ import qualified Data.Set as Set
 import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrd
 import qualified Data.HashSet.InsOrd as InsOrdHS
 
-import Data.OpenApi.Aeson.Compat (keyToString, objectToList, stringToKey)
+import Data.OpenApi.Aeson.Compat (keyToString, objectToList, stringToKey, lookupKey, insertKey, deleteKey)
+
+-------------------------------------------------------------------------------
+-- Dollar-prefixed keys (JSON Schema 2020-12)
+-------------------------------------------------------------------------------
+
+-- | Rewrite a generated JSON 'Value': for each @(plain, dollar)@ pair, if the
+-- top-level object has the @plain@ key, move its value to the @dollar@ key. The
+-- generic field-name rule cannot emit a key beginning with @$@, so this post-pass
+-- injects them (e.g. @"ref"@ → @"$ref"@). Non-object values are returned unchanged.
+applyKeyRenamesToJSON :: [(Text, Text)] -> Value -> Value
+applyKeyRenamesToJSON renames (Object o) = Object (foldl' renameOne o renames)
+  where
+    renameOne obj (plain, dollar) =
+      case lookupKey plain obj of
+        Nothing -> obj
+        Just v  -> insertKey dollar v (deleteKey (stringToKey (T.unpack plain)) obj)
+applyKeyRenamesToJSON _ v = v
+
+-- | The inverse of 'applyKeyRenamesToJSON': move each @dollar@ key back to its
+-- @plain@ key before the generic parser runs (e.g. @"$ref"@ → @"ref"@).
+applyKeyRenamesParseJSON :: [(Text, Text)] -> Object -> Object
+applyKeyRenamesParseJSON renames o = foldl' renameOne o renames
+  where
+    renameOne obj (plain, dollar) =
+      case lookupKey dollar obj of
+        Nothing -> obj
+        Just v  -> insertKey plain v (deleteKey (stringToKey (T.unpack dollar)) obj)
 
 -------------------------------------------------------------------------------
 -- SwaggerAesonOptions

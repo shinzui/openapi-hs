@@ -166,6 +166,7 @@ test-suite spec
     Data.OpenApi.Schema.ValidationSpec
     Data.OpenApi.Schema.GeneratorSpec
     Data.OpenApi.Schema.CoreTypes31Spec
+    Data.OpenApi.Schema31Spec
   default-language: Haskell2010
 
 executable example

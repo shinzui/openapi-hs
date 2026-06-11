@@ -36,11 +36,17 @@ swaggerFieldRules = defaultFieldRules & lensField %~ swaggerFieldNamer
     fixName' "in"       = "in_"       -- keyword
     fixName' "type"     = "type_"     -- keyword
     fixName' "default"  = "default_"  -- keyword
+    fixName' "if"       = "if_"       -- keyword
+    fixName' "then"     = "then_"     -- keyword
+    fixName' "else"     = "else_"     -- keyword
     fixName' "minimum"  = "minimum_"  -- Prelude conflict
     fixName' "maximum"  = "maximum_"  -- Prelude conflict
     fixName' "enum"     = "enum_"     -- Control.Lens conflict
     fixName' "head"     = "head_"     -- Prelude conflict
     fixName' "not"      = "not_"      -- Prelude conflict
+    fixName' "id"       = "id_"       -- Prelude conflict
+    fixName' "const"    = "const_"    -- Prelude conflict
+    fixName' "contains" = "contains_" -- Control.Lens conflict
     fixName' n = n
 
 gunfoldEnum :: String -> [a] -> (forall b r. Data b => c (b -> r) -> c r) -> (forall r. r -> c r) -> Constr -> c a

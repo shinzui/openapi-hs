@@ -38,7 +38,8 @@ import Data.OpenApi.Aeson.Compat        (deleteKey)
 import Data.OpenApi.Internal.AesonUtils (AesonDefaultValue (..), HasSwaggerAesonOptions (..),
                                          mkSwaggerAesonOptions, saoAdditionalPairs, saoSubObject,
                                          sopSwaggerGenericParseJSON, sopSwaggerGenericToEncoding,
-                                         sopSwaggerGenericToJSON, sopSwaggerGenericToJSONWithOpts)
+                                         sopSwaggerGenericToJSON, sopSwaggerGenericToJSONWithOpts,
+                                         applyKeyRenamesToJSON, applyKeyRenamesParseJSON)
 import Data.OpenApi.Internal.Utils
 import Generics.SOP.TH                  (deriveGeneric)
 import Data.Version
@@ -690,7 +691,36 @@ data Schema = Schema
   , _schemaUniqueItems :: Maybe Bool
   , _schemaEnum :: Maybe [Value]
   , _schemaMultipleOf :: Maybe Scientific
+
+  -- JSON Schema 2020-12 additions (OpenAPI 3.1) — EP-4
+  , _schemaConst :: Maybe Value
+  , _schemaPrefixItems :: Maybe [Referenced Schema]
+  , _schemaContains :: Maybe (Referenced Schema)
+  , _schemaMinContains :: Maybe Integer
+  , _schemaMaxContains :: Maybe Integer
+  , _schemaIf :: Maybe (Referenced Schema)
+  , _schemaThen :: Maybe (Referenced Schema)
+  , _schemaElse :: Maybe (Referenced Schema)
+  , _schemaDependentSchemas :: Maybe (InsOrdHashMap Text (Referenced Schema))
+  , _schemaDependentRequired :: Maybe (InsOrdHashMap Text [Text])
+  , _schemaUnevaluatedProperties :: Maybe AdditionalProperties
+  , _schemaUnevaluatedItems :: Maybe (Referenced Schema)
+  , _schemaPropertyNames :: Maybe (Referenced Schema)
+  , _schemaContentEncoding :: Maybe Text
+  , _schemaContentMediaType :: Maybe Text
+  , _schemaContentSchema :: Maybe (Referenced Schema)
+  , _schemaExamples :: Maybe [Value]
+
+  -- JSON Schema 2020-12 identification / reference keywords ($-prefixed) — EP-4
+  , _schemaId :: Maybe Text                                         -- $id
+  , _schemaAnchor :: Maybe Text                                     -- $anchor
+  , _schemaDefs :: Maybe (InsOrdHashMap Text (Referenced Schema))   -- $defs
+  , _schemaRef :: Maybe Text                                        -- $ref (siblings allowed; see Decision Log)
+  , _schemaDynamicRef :: Maybe Text                                 -- $dynamicRef
+  , _schemaDynamicAnchor :: Maybe Text                              -- $dynamicAnchor
   } deriving (Eq, Show, Generic, Data, Typeable)
+
+{-# DEPRECATED _schemaExample "Use _schemaExamples (JSON Schema 'examples') in OpenAPI 3.1" #-}
 
 -- | Regex pattern for @string@ type.
 type Pattern = Text
@@ -1374,9 +1404,23 @@ instance ToJSON SecurityScheme where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
+-- | The canonical rename table mapping the plain keys produced by the generic
+-- field-name rule to their JSON Schema 2020-12 @$@-prefixed spellings. Owned by
+-- EP-4 (Integration Point IP-3); EP-5 imports the helpers and supplies its own table.
+schemaDollarKeyRenames :: [(Text, Text)]
+schemaDollarKeyRenames =
+  [ ("id", "$id")
+  , ("anchor", "$anchor")
+  , ("defs", "$defs")
+  , ("ref", "$ref")
+  , ("dynamicRef", "$dynamicRef")
+  , ("dynamicAnchor", "$dynamicAnchor")
+  ]
+
 instance ToJSON Schema where
-  toJSON = sopSwaggerGenericToJSONWithOpts $
-      mkSwaggerAesonOptions "schema" & saoSubObject ?~ "items"
+  toJSON = applyKeyRenamesToJSON schemaDollarKeyRenames
+         . sopSwaggerGenericToJSONWithOpts
+             (mkSwaggerAesonOptions "schema" & saoSubObject ?~ "items")
 
 instance ToJSON Header where
   toJSON = sopSwaggerGenericToJSON
@@ -1526,7 +1570,8 @@ instance FromJSON SecurityScheme where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON Schema where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = withObject "Schema" $ \o ->
+    sopSwaggerGenericParseJSON (Object (applyKeyRenamesParseJSON schemaDollarKeyRenames o))
 
 instance FromJSON Header where
   parseJSON = sopSwaggerGenericParseJSON
@@ -1587,13 +1632,18 @@ referencedParseJSON prefix js@(Object o) = do
   ms <- o .:? "$ref"
   case ms of
     Nothing -> Inline <$> parseJSON js
-    Just s  -> Ref <$> parseRef s
-  where
-    parseRef s = do
-      case Text.stripPrefix prefix s of
-        Nothing     -> fail $ "expected $ref of the form \"" <> Text.unpack prefix <> "*\", but got " <> show s
-        Just suffix -> pure (Reference suffix)
-referencedParseJSON _ _ = fail "referenceParseJSON: not an object"
+    Just s  -> case Text.stripPrefix prefix s of
+      -- Pure component reference (sole @$ref@ key, value under the component
+      -- prefix) stays a 'Ref'. Anything else — siblings present, or a @$ref@ that
+      -- does not target a component (e.g. @#/$defs/A@) — is a JSON Schema 2020-12
+      -- inline schema that carries @$ref@ alongside other keywords (see Decision Log).
+      Just suffix | KeyMap.size o == 1 -> pure (Ref (Reference suffix))
+      _                                -> Inline <$> parseJSON js
+-- JSON Schema 2020-12 boolean schemas: @true@ accepts everything, @false@ rejects
+-- everything. Decode them to canonical inline schemas (see Decision Log).
+referencedParseJSON _ (Bool True)  = Inline <$> parseJSON (Object mempty)
+referencedParseJSON _ (Bool False) = Inline <$> parseJSON (object [ "not" .= object [] ])
+referencedParseJSON _ _ = fail "referenceParseJSON: not an object or boolean"
 
 instance FromJSON (Referenced Schema)   where parseJSON = referencedParseJSON "#/components/schemas/"
 instance FromJSON (Referenced Param)    where parseJSON = referencedParseJSON "#/components/parameters/"
