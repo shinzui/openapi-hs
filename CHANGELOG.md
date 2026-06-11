@@ -1,6 +1,31 @@
 Unreleased
 ----------
 
+4.0.0
+-----
+
+- **Breaking:** the data model now represents OpenAPI 3.1 / JSON Schema 2020-12
+  instead of 3.0. Supported spec versions are 3.1.x.
+- **Breaking:** removed `nullable`; use `type: ["...","null"]` (`OpenApiTypeArray`).
+- **Breaking:** `exclusiveMaximum`/`exclusiveMinimum` are now numeric (`Scientific`)
+  and independent of `maximum`/`minimum`.
+- **Breaking:** removed the tuple `items` array; use `prefixItems` + `items: false`.
+- Added JSON Schema 2020-12 fields: `prefixItems`, `const`, `if`/`then`/`else`,
+  `contains`/`minContains`/`maxContains`, `unevaluatedProperties`/`unevaluatedItems`,
+  `dependentSchemas`/`dependentRequired`, `propertyNames`, content keywords, `examples`,
+  and `$id`/`$anchor`/`$defs`/`$ref`/`$dynamicRef`/`$dynamicAnchor`.
+- Added top-level 3.1 features: `webhooks`, `Info.summary`, `License.identifier`,
+  and `$ref` on `PathItem`.
+- Added `Value`-layer 3.0->3.1 migration helpers in `Data.OpenApi.Migration`
+  (see `MIGRATION_3.0_TO_3.1.md`).
+- Schema validation understands the new 3.1 keywords (type arrays, numeric
+  exclusive bounds, `prefixItems`, `contains*`, `if`/`then`/`else`, `const`, and a
+  best-effort `unevaluated*`).
+- **Build:** Cabal-only on GHC 9.12.4/9.14.1; removed `stack.yaml` and the custom
+  `Setup.hs`/`cabal-doctest` machinery; `build-type: Simple`.
+- **Renamed** the package from `openapi3` to `openapi-hs` (module namespace
+  `Data.OpenApi.*` unchanged).
+
 3.2.5
 -----
 

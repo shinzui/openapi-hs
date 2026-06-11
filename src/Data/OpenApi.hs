@@ -3,12 +3,16 @@
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
 -- Stability:   experimental
 --
--- Swagger™ is a project used to describe and document RESTful APIs.
+-- OpenAPI 3.1 data model.
 --
--- The Swagger specification defines a set of files required to describe such an API.
--- These files can then be used by the Swagger-UI project to display the API
--- and Swagger-Codegen to generate clients in various languages.
--- Additional utilities can also take advantage of the resulting files, such as testing tools.
+-- This library supports OpenAPI Specification version 3.1.x (which adopts the
+-- JSON Schema 2020-12 dialect), decoding and encoding 3.1 API specifications as
+-- well as manipulating them. The specification is available at
+-- <https://spec.openapis.org/oas/v3.1.0>.
+--
+-- To bring an existing OpenAPI 3.0 document forward, rewrite the parsed JSON with
+-- the helpers in "Data.OpenApi.Migration" before decoding it into these 3.1 types
+-- (see @MIGRATION_3.0_TO_3.1.md@).
 module Data.OpenApi (
   -- * How to use this library
   -- $howto

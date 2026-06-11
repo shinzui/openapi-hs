@@ -114,7 +114,7 @@ migration plan itself; see Decision Log). See the Decision Log for the full reco
 | 4 | OpenAPI 3.1 JSON Schema Fields and Reference Keywords | docs/plans/4-openapi-3-1-json-schema-fields-and-reference-keywords.md | EP-3 | EP-1 | Complete |
 | 5 | OpenAPI 3.1 Top-Level Object Features | docs/plans/5-openapi-3-1-top-level-object-features.md | EP-3 | EP-4 | Complete |
 | 6 | OpenAPI 3.1 Schema Validation | docs/plans/6-openapi-3-1-schema-validation.md | EP-3, EP-4 | None | Complete |
-| 7 | OpenAPI 3.1 Migration Helpers, Tests, and Release | docs/plans/7-openapi-3-1-migration-helpers-tests-and-release.md | EP-3, EP-4, EP-5 | EP-2, EP-6 | Not Started |
+| 7 | OpenAPI 3.1 Migration Helpers, Tests, and Release | docs/plans/7-openapi-3-1-migration-helpers-tests-and-release.md | EP-3, EP-4, EP-5 | EP-2, EP-6 | Complete |
 
 Status values: Not Started, In Progress, Complete, Cancelled.
 Hard Deps and Soft Deps reference other rows by their # prefix (e.g., EP-1, EP-3).
@@ -236,8 +236,8 @@ milestones complete.
 - [x] EP-5: Add `webhooks` to `OpenApi`; `summary` to `Info`; `identifier` to `License`; `$ref` to `PathItem` (2026-06-10)
 - [x] EP-5: Round-trip top-level features; reuse EP-4's `$`-key helper (2026-06-10)
 - [x] EP-6: Validate type arrays, `prefixItems`, `contains`/`minContains`/`maxContains`, `if`/`then`/`else`, `const` (2026-06-10)
-- [ ] EP-7: Implement `Value`-layer 3.0→3.1 migration helpers; migration tests pass
-- [ ] EP-7: Comprehensive 3.1 test suite; `MIGRATION_3.0_TO_3.1.md`; bump to 4.0.0; CHANGELOG; module docs
+- [x] EP-7: Implement `Value`-layer 3.0→3.1 migration helpers; migration tests pass (2026-06-10)
+- [x] EP-7: Comprehensive 3.1 test suite; `MIGRATION_3.0_TO_3.1.md`; bump to 4.0.0; CHANGELOG; module docs (2026-06-10)
 
 
 ## Surprises & Discoveries
@@ -380,4 +380,39 @@ implementation.
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion. Compare
 the result against the original vision.
 
-(To be filled during and after implementation.)
+**All seven child plans complete (2026-06-10).** The fork is now a modern, OpenAPI 3.1-capable
+library matching the Vision:
+
+- **Identity & build (EP-1, EP-2):** package renamed `openapi3` → **`openapi-hs`**, Cabal-only on
+  GHC 9.12.4/9.14.1 (`build-type: Simple`, no `stack.yaml`/custom Setup/doctests), `cabal-version`
+  3.0, SPDX license. The `Data.OpenApi.*` namespace is unchanged.
+- **3.1 data model (EP-3, EP-4, EP-5):** type arrays (`OpenApiTypeValue`), numeric exclusive
+  bounds, no `nullable`, object/boolean `items`, version 3.1.x; the full JSON Schema 2020-12 field
+  set including the `$`-prefixed keywords (via the shared `applyKeyRenamesToJSON`/`ParseJSON`
+  helper, IP-3); and the top-level features `webhooks`/`Info.summary`/`License.identifier`/
+  `PathItem.$ref`. Everything round-trips losslessly.
+- **Validation (EP-6):** the engine understands type arrays, numeric bounds, `prefixItems`,
+  `contains*`, `if`/`then`/`else`, `const`, and a best-effort `unevaluated*`.
+- **Migration & release (EP-7):** `Data.OpenApi.Migration` bridges 3.0→3.1 at the `Value` layer;
+  version **4.0.0**, "OpenAPI 3.1 data model" synopsis, `MIGRATION_3.0_TO_3.1.md`, CHANGELOG, and
+  updated module/README docs. `cabal check` clean; `cabal sdist` produces `openapi-hs-4.0.0.tar.gz`.
+
+Final state: `cabal build all` + `cabal test all` green — **448 examples, 0 failures, 5 pending**.
+The seven plans landed in 12 commits (EP-3 in 4, the rest 1–2 each), each milestone committed in a
+working state with both `MasterPlan:`/`ExecPlan:` trailers.
+
+**Outstanding follow-ups (tracked in Surprises, none blocking the release):**
+1. Generic tuple `ToSchema` derivation still emits the EP-3 `anyOf`-`items` stub rather than
+   `prefixItems`; 5 positional-tuple generator props are `xprop` (pending). The `prefixItems`
+   field exists to support the switch — a clean follow-up.
+2. No `Arbitrary Schema` instance; `prop_schema31_roundtrip` uses a bounded fragment generator.
+3. `unevaluated*` is local-only (no cross-schema annotation tracking); `not`/`anyOf` are still
+   unvalidated (pre-existing). All documented in-code with `TODO` markers.
+4. Hackage publishing was explicitly out of scope (release artifacts prepared, not uploaded).
+
+**Lessons:** the EP-3→EP-4 coupling (tuple derivation, `$`-key helper) and the EP-3-pre-landing of
+EP-6's M1 played out as the Decomposition Strategy predicted — sequencing the hard `Schema`
+foundation (EP-3) first let every later plan append/consume cleanly (IP-2). The biggest
+deviations were all in the *serialization/TH* margins the plans had partially flagged: reserved-word
+lens names (`if`/`then`/`else`/`id`/`const`/`contains`), `toEncoding` bypassing rename passes, and
+strict `validateObject`/un-validated `not` shaping the test design.

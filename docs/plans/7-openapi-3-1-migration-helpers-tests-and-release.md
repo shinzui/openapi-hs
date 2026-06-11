@@ -67,35 +67,29 @@ This section must always reflect the actual current state of the work.
 
 Milestone 1 — Value-layer migration helpers:
 
-- [ ] Create `src/Data/OpenApi/Migration.hs` exposing `migrate30To31`, `migrate30NullableValue`, `migrate30ExclusiveBoundsValue`, `migrate30ItemsArrayValue`, and `migrate30SchemaValue`.
-- [ ] Implement nullable rewrite (`nullable:true` → add `"null"` to `type`; `nullable:false` → drop `"nullable"`).
-- [ ] Implement exclusive-bounds rewrite (boolean `exclusiveMaximum`/`exclusiveMinimum` → numeric or removed).
-- [ ] Implement tuple-`items` rewrite (`items:[...]` → `prefixItems:[...]` + `items:false`).
-- [ ] Implement the recursive document walk `migrate30To31` applying all rewrites to every nested schema object.
-- [ ] Add the `{-# DEPRECATED migrate30NullableValue ... #-}` pragma (and the same on the other helpers).
-- [ ] Register `Data.OpenApi.Migration` in the library `exposed-modules` of the `.cabal`.
+- [x] Created `src/Data/OpenApi/Migration.hs` exposing `migrate30To31`, `migrate30NullableValue`, `migrate30ExclusiveBoundsValue`, `migrate30ItemsArrayValue`, `migrate30SchemaValue` (2026-06-10).
+- [x] nullable rewrite (`nullable:true` → add `"null"` to `type`; `nullable:false` → drop `"nullable"`).
+- [x] exclusive-bounds rewrite (boolean → numeric, dropping `maximum` when `exclusiveMaximum:true`).
+- [x] tuple-`items` rewrite (`items:[...]` → `prefixItems:[...]` + `items:false`).
+- [x] recursive document walk `migrate30To31` (applies the per-object rewrite to every nested object).
+- [x] `{-# DEPRECATED #-}` pragma on all five helpers.
+- [x] Registered `Data.OpenApi.Migration` in the library `exposed-modules`.
 
 Milestone 2 — comprehensive 3.1 test suite:
 
-- [ ] Add `test/Data/OpenApi/Schema/TypeArraySpec.hs` (type arrays).
-- [ ] Add `test/Data/OpenApi/Schema/ExclusiveBoundsSpec.hs` (numeric exclusive bounds).
-- [ ] Add `test/Data/OpenApi/Schema/PrefixItemsSpec.hs` (`prefixItems` + `items:false`).
-- [ ] Add `test/Data/OpenApi/Schema/ConditionalSpec.hs` (`if`/`then`/`else`/`const`).
-- [ ] Add `test/Data/OpenApi/Schema/IdentificationSpec.hs` (`$defs`/`$id`/`$ref`).
-- [ ] Add `test/Data/OpenApi/WebhooksSpec.hs` (`webhooks`).
-- [ ] Add `test/Data/OpenApi/InfoLicenseSpec.hs` (`Info.summary`, `License.identifier`).
-- [ ] Add `test/Data/OpenApi/MigrationSpec.hs` (3.0→3.1 helper tests).
-- [ ] Add property-based round-trip `prop_schema31_roundtrip` (depends on EP-3/EP-4 `Arbitrary Schema`).
-- [ ] Register every new spec module in the `.cabal` test-suite `other-modules` (IP-5) and run the final audit.
+- [x] Feature coverage: the per-feature specs the plan enumerated (type arrays, exclusive bounds, prefixItems, conditionals, `const`, `$defs`/`$id`/`$ref`, webhooks, Info/License) were **already authored by EP-3/EP-4/EP-5/EP-6** as `CoreTypes31Spec`, `Schema31Spec`, `TopLevel31Spec`, and `Validation31Spec`. EP-7 reuses those rather than duplicating them (see Surprises).
+- [x] Added `test/Data/OpenApi/MigrationSpec.hs` (3.0→3.1 helper tests, incl. a nested-recursion case).
+- [x] Added `test/Data/OpenApi/Schema/RoundtripSpec.hs` with `prop_schema31_roundtrip` over a bounded fragment generator (no `Arbitrary Schema` exists — see Surprises).
+- [x] Registered both new modules in the test-suite `other-modules`; IP-5 audit clean (only `test/Spec.hs`, the `hspec-discover` driver, is unlisted — it is `main-is`).
 
 Milestone 3 — documentation + release:
 
-- [ ] Update `src/Data/OpenApi.hs` module haddock header to "OpenAPI 3.1 data model".
-- [ ] Create `MIGRATION_3.0_TO_3.1.md` at the repository root.
-- [ ] Set `version: 4.0.0`, `synopsis`, and long `description` in the `.cabal` (IP-1, version + final wording only).
-- [ ] Add a `4.0.0` entry to `CHANGELOG.md` under "Unreleased".
-- [ ] Update `README.md` to 3.1 wording (package name already handled by EP-2).
-- [ ] Run `nix develop -c cabal test all`, `nix develop -c cabal check`, `nix develop -c cabal sdist` and capture transcripts.
+- [x] Updated `src/Data/OpenApi.hs` module header to "OpenAPI 3.1 data model" (+ pointer to `Data.OpenApi.Migration`).
+- [x] Created `MIGRATION_3.0_TO_3.1.md` at the repository root.
+- [x] Set `version: 4.0.0`, `synopsis: OpenAPI 3.1 data model`, and the 3.1 `description` (IP-1).
+- [x] Added a `4.0.0` entry to `CHANGELOG.md` under "Unreleased".
+- [x] Updated `README.md` to 3.1 wording.
+- [x] `cabal test all` (448 examples, 0 failures, 5 pending), `cabal check` ("No errors or warnings"), `cabal sdist` (wrote `openapi-hs-4.0.0.tar.gz`). Moved `CHANGELOG.md`/`README.md` to `extra-doc-files` to clear the one `cabal check` warning.
 
 
 ## Surprises & Discoveries
@@ -103,7 +97,33 @@ Milestone 3 — documentation + release:
 Document unexpected behaviors, bugs, optimizations, or insights discovered during
 implementation. Provide concise evidence.
 
-(None yet.)
+- **No `Arbitrary Schema` instance exists (2026-06-10).** The plan (and the master plan's IP
+  notes) assumed EP-3/EP-4 would update an `Arbitrary Schema` instance that `prop_schema31_roundtrip`
+  could use. In fact the tree has **no** `Arbitrary Schema` — the existing property tests generate
+  arbitrary *values* via `ToSchema`-derived schemas, not arbitrary `Schema` records. Authoring a
+  full recursive `Arbitrary` for the ~50-field `Schema` (with `Referenced Schema` recursion needing
+  careful sizing) is large and risky. Instead `RoundtripSpec` uses a **bounded fragment generator**:
+  it picks a random subset of independent single-field setters (type arrays, exclusive bounds,
+  `prefixItems`, `const`, `contains`, `if`/`then`, `examples`, `$id`/`$ref`, `unevaluatedItems`, …)
+  and asserts `decode (encode s) === Just s`. The property "exists and runs" and exercises random
+  combinations of the new fields without a full instance. (Cross-plan note: a real `Arbitrary Schema`
+  remains future work if exhaustive property coverage is wanted.)
+
+- **The per-feature specs the plan listed were already written by earlier plans (2026-06-10).**
+  EP-3 added `Data.OpenApi.Schema.CoreTypes31Spec` (type arrays, numeric exclusive bounds, boolean
+  items, `detectVersion`); EP-4 added `Data.OpenApi.Schema31Spec` (`prefixItems`, `const`,
+  conditionals, `contains`, `examples`, `$defs`/`$id`/`$ref`, boolean sub-schemas); EP-5 added
+  `Data.OpenApi.TopLevel31Spec` (`webhooks`, `Info.summary`, `License.identifier`, `PathItem.$ref`);
+  EP-6 added `Data.OpenApi.Schema.Validation31Spec`. EP-7 therefore did **not** create the separate
+  `TypeArraySpec`/`ExclusiveBoundsSpec`/`PrefixItemsSpec`/`ConditionalSpec`/`IdentificationSpec`/
+  `WebhooksSpec`/`InfoLicenseSpec` modules the plan enumerated — that coverage already exists, and
+  duplicating it would only add churn. EP-7's genuinely new test modules are `MigrationSpec` and
+  `RoundtripSpec`.
+
+- **`cabal check` flagged a doc-placement warning (2026-06-10).** With `cabal-version: 3.0`,
+  `cabal check` warned that `CHANGELOG.md` belongs in `extra-doc-files`, not `extra-source-files`.
+  Moved `README.md`/`CHANGELOG.md` (and the new `MIGRATION_3.0_TO_3.1.md`) to `extra-doc-files`,
+  leaving only `examples/*.hs` in `extra-source-files`; `cabal check` is now clean.
 
 
 ## Decision Log
@@ -153,7 +173,28 @@ Record every decision made while working on the plan.
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion.
 Compare the result against the original purpose.
 
-(To be filled during and after implementation.)
+**Completed 2026-06-10.** All three EP-7 capabilities exist:
+
+- `Data.OpenApi.Migration` rewrites raw 3.0 JSON into 3.1 shape
+  (`migrate30To31` + the three single-concern helpers + `migrate30SchemaValue`), all deprecated
+  to flag transitional 3.0 input. Verified end-to-end:
+  `decode (encode (migrate30To31 {"type":"string","nullable":true}))` yields a `Schema` with
+  `_schemaType = OpenApiTypeArray [OpenApiString, OpenApiNull]`.
+- A comprehensive 3.1 test surface: the feature specs from EP-3..EP-6 plus EP-7's `MigrationSpec`
+  and `RoundtripSpec` (`prop_schema31_roundtrip`). `cabal test all` → 448 examples, 0 failures,
+  5 pending.
+- Release prep: `version: 4.0.0`, `synopsis: OpenAPI 3.1 data model`, updated module header,
+  README, a `4.0.0` CHANGELOG entry, and `MIGRATION_3.0_TO_3.1.md`. `cabal check` is clean and
+  `cabal sdist` writes `openapi-hs-4.0.0.tar.gz`. No `cabal upload` (release-prep only, per scope).
+
+**Gaps / future work:**
+- No real `Arbitrary Schema`; the round-trip property uses a bounded fragment generator
+  (Surprises). A full instance would broaden property coverage.
+- The migration `version`-string is not rewritten by the helpers (a 3.0 doc's `"openapi":"3.0.x"`
+  would still fail the 3.1 version bounds); callers should set `"openapi":"3.1.0"` after migrating,
+  or the helper could be extended. Documented as a pitfall direction in the guide.
+- Outstanding from EP-4 (tracked in the MasterPlan): generic tuple `ToSchema` still uses the
+  `anyOf`-`items` stub rather than `prefixItems`; the 5 pending tuple generator props remain.
 
 
 ## Context and Orientation

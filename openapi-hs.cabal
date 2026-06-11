@@ -1,16 +1,16 @@
 cabal-version:       3.0
 name:                openapi-hs
-version:             3.2.5
+version:             4.0.0
 
-synopsis:            OpenAPI 3.0 data model (openapi-hs fork of openapi3)
+synopsis:            OpenAPI 3.1 data model
 category:            Web, Swagger, OpenApi
 description:
-  openapi-hs is a fork of the openapi3 library, intended to be used for decoding and
-  encoding OpenAPI 3.0 API specifications as well as manipulating them. The Haskell
+  openapi-hs (a fork of the openapi3 library) is intended to be used for decoding and
+  encoding OpenAPI 3.1 API specifications as well as manipulating them. The Haskell
   module namespace remains Data.OpenApi.*, so only the package dependency name changes
-  for downstream users.
+  for downstream users migrating from openapi3.
   .
-  The original OpenAPI 3.0 specification is available at http://swagger.io/specification/.
+  The OpenAPI 3.1 specification is available at https://spec.openapis.org/oas/v3.1.0
 
 homepage:            https://github.com/shinzui/openapi-hs
 bug-reports:         https://github.com/shinzui/openapi-hs/issues
@@ -21,9 +21,11 @@ maintainer:          nickolay@getshoptv.com, kolmax94@gmail.com
 copyright:           (c) 2015-2016, GetShopTV, (c) 2020, Biocad
 build-type:          Simple
 extra-source-files:
+    examples/*.hs
+extra-doc-files:
     README.md
   , CHANGELOG.md
-  , examples/*.hs
+  , MIGRATION_3.0_TO_3.1.md
 tested-with:
   GHC ==9.12.4 || ==9.14.1
 
@@ -31,6 +33,7 @@ library
   hs-source-dirs:      src
   exposed-modules:
     Data.OpenApi
+    Data.OpenApi.Migration
     Data.OpenApi.Declare
     Data.OpenApi.Lens
     Data.OpenApi.Operation
@@ -169,6 +172,8 @@ test-suite spec
     Data.OpenApi.Schema.CoreTypes31Spec
     Data.OpenApi.Schema31Spec
     Data.OpenApi.TopLevel31Spec
+    Data.OpenApi.MigrationSpec
+    Data.OpenApi.Schema.RoundtripSpec
   default-language: Haskell2010
 
 executable example

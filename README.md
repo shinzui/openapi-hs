@@ -2,16 +2,18 @@
 
 [![Hackage](https://img.shields.io/hackage/v/openapi-hs.svg)](http://hackage.haskell.org/package/openapi-hs)
 
-OpenAPI 3.0 data model.
+OpenAPI 3.1 data model.
 
-The original OpenAPI 3.0 specification is available at http://swagger.io/specification/.
+The OpenAPI 3.1 specification is available at https://spec.openapis.org/oas/v3.1.0.
 
 This package is heavily based on excellent work on Swagger 2.0 at
 https://github.com/GetShopTV/swagger2.
 
 ## Usage
 
-This library is intended to be used for decoding and encoding OpenApi 3.0.3 specifications as well as manipulating them.
+This library is intended to be used for decoding and encoding OpenAPI 3.1 specifications as well as manipulating them.
+
+Migrating an existing OpenAPI 3.0 document? See [`MIGRATION_3.0_TO_3.1.md`](/MIGRATION_3.0_TO_3.1.md) and the `Data.OpenApi.Migration` module.
 
 Please refer to [haddock documentation](http://hackage.haskell.org/package/openapi-hs).
 
