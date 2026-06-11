@@ -1,53 +1,202 @@
 # openapi-hs
 
-[![Hackage](https://img.shields.io/hackage/v/openapi-hs.svg)](http://hackage.haskell.org/package/openapi-hs)
+[![Hackage](https://img.shields.io/hackage/v/openapi-hs.svg)](https://hackage.haskell.org/package/openapi-hs)
+[![License BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](/LICENSE)
 
-> **Fork notice.** `openapi-hs` is a fork of [`openapi3`](https://github.com/biocad/openapi3),
-> which is no longer actively maintained and supports only OpenAPI 3.0. This fork updates the
-> library to **OpenAPI 3.1 / JSON Schema 2020-12**. The Haskell module namespace remains
-> `Data.OpenApi.*`, so downstream code only swaps the dependency name `openapi3` → `openapi-hs`.
-> The fork preserves the original BSD-3-Clause license and copyright — see [License](#license).
+A Haskell library for **decoding, encoding, manipulating, and validating
+[OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.0) documents** — the format that
+describes HTTP APIs in JSON or YAML. OpenAPI 3.1 adopts the
+[JSON Schema 2020-12](https://json-schema.org/specification-links#2020-12) dialect.
 
-OpenAPI 3.1 data model.
+> **Fork notice.** `openapi-hs` is a fork of
+> [`biocad/openapi3`](https://github.com/biocad/openapi3), which is no longer actively
+> maintained and supports only OpenAPI 3.0. This fork brings the library up to OpenAPI 3.1.
+> The Haskell module namespace is unchanged (`Data.OpenApi.*`), so migrating is usually just a
+> dependency-name swap: `openapi3` → `openapi-hs`. The fork keeps the upstream
+> [BSD-3-Clause license](#license) and copyright.
 
-The OpenAPI 3.1 specification is available at https://spec.openapis.org/oas/v3.1.0.
+---
 
-This package is heavily based on excellent work on Swagger 2.0 at
-https://github.com/GetShopTV/swagger2.
+## Highlights
 
-## Usage
+- **Full OpenAPI 3.1 / JSON Schema 2020-12 data model** with lossless JSON round-tripping.
+- **Type arrays** for nullability (`type: ["string", "null"]`) instead of the removed `nullable`.
+- **Numeric** `exclusiveMaximum` / `exclusiveMinimum`, independent of `maximum` / `minimum`.
+- **Tuples via `prefixItems`** (+ `items: false`) instead of the removed `items` array form.
+- **Conditional & assertion keywords:** `if`/`then`/`else`, `const`, `contains` /
+  `minContains` / `maxContains`, `dependentSchemas` / `dependentRequired`,
+  `unevaluatedProperties` / `unevaluatedItems`, content keywords, and `examples`.
+- **JSON Schema identification keywords:** `$id`, `$anchor`, `$defs`, `$ref`, `$dynamicRef`,
+  `$dynamicAnchor`.
+- **Top-level 3.1 features:** `webhooks`, `Info.summary`, `License.identifier`, and `$ref` on
+  `PathItem`.
+- **Schema validation** that understands the new 3.1 keywords.
+- **`ToSchema` derivation** to generate schemas from your Haskell types via `GHC.Generics`.
+- **`lens` and `optics`** accessors for ergonomic reads and updates.
+- **3.0 → 3.1 migration helpers** for documents you don't control yet.
 
-This library is intended to be used for decoding and encoding OpenAPI 3.1 specifications as well as manipulating them.
+This package builds on the excellent
+[swagger2](https://github.com/GetShopTV/swagger2) work it was originally derived from.
 
-Migrating an existing OpenAPI 3.0 document? See [`MIGRATION_3.0_TO_3.1.md`](/MIGRATION_3.0_TO_3.1.md) and the `Data.OpenApi.Migration` module.
+## Installation
 
-Please refer to [haddock documentation](http://hackage.haskell.org/package/openapi-hs).
+Add `openapi-hs` to your project's dependencies (Cabal):
 
-Some examples can be found in [`examples/` directory](/examples).
+```cabal
+build-depends: openapi-hs
+```
 
-## Trying out
+then import the umbrella module, which re-exports everything you typically need:
 
-All generated swagger specifications can be interactively viewed on [Swagger Editor](http://editor.swagger.io/).
+```haskell
+import Data.OpenApi
+```
 
-Ready-to-use specification can be served as JSON and interactive API documentation
-can be displayed using [Swagger UI](https://github.com/swagger-api/swagger-ui).
+Requires GHC **9.12.4** or **9.14.1**.
 
-Many Swagger tools, including server and client code generation for many languages, can be found on
-[Swagger's Tools and Integrations page](http://swagger.io/open-source-integrations/).
+## Quick start
+
+### Build and serialize a schema
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+import Control.Lens
+import Data.Aeson (encode)
+import Data.OpenApi
+
+-- "a string, or null" — 3.1 nullability via a type array
+nullableString :: Schema
+nullableString = mempty
+  & type_       ?~ OpenApiTypeArray [OpenApiString, OpenApiNull]
+  & description ?~ "an optional name"
+
+-- encode nullableString == "{\"description\":\"an optional name\",\"type\":[\"string\",\"null\"]}"
+```
+
+### Derive a schema from a Haskell type
+
+```haskell
+{-# LANGUAGE DeriveGeneric #-}
+import Data.Aeson (ToJSON)
+import Data.Proxy (Proxy (..))
+import GHC.Generics (Generic)
+import Data.OpenApi
+
+data User = User
+  { name :: String
+  , age  :: Int
+  } deriving (Show, Generic)
+
+instance ToJSON  User   -- needed for validation (below)
+instance ToSchema User
+
+userSchema :: Schema
+userSchema = toSchema (Proxy :: Proxy User)
+```
+
+### Decode a 3.1 document
+
+```haskell
+import Data.Aeson (decode)
+import Data.OpenApi (Schema)
+
+-- decode "{\"prefixItems\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"items\":false}"
+--   :: Maybe Schema
+```
+
+### Validate a value against a schema
+
+```haskell
+import Data.OpenApi
+import Data.OpenApi.Schema.Validation (validateToJSON)
+
+-- Using the `User` from above (which has both ToJSON and ToSchema):
+-- validateToJSON returns [] when the value conforms to its derived schema,
+-- or a list of human-readable errors otherwise.
+ok :: [ValidationError]
+ok = validateToJSON (User "Ada" 36)   -- []
+```
+
+For validating an arbitrary JSON `Value` against a specific `Schema`, use
+`validateJSON :: Definitions Schema -> Schema -> Value -> [ValidationError]`.
+
+## Lenses and optics
+
+Every record field has a generated accessor in both the
+[`lens`](https://hackage.haskell.org/package/lens) and
+[`optics`](https://hackage.haskell.org/package/optics) styles. Import whichever you prefer:
+
+```haskell
+import Data.OpenApi             -- lens accessors (Data.OpenApi.Lens)
+-- or
+import Data.OpenApi.Optics      -- optics labels (#type, #properties, …)
+```
+
+A few field lenses are suffixed with `_` to avoid clashing with reserved words or `Prelude`
+names: `type_`, `enum_`, `minimum_`, `maximum_`, `default_`, `const_`, `if_`, `then_`, `else_`,
+`contains_`, `id_`. The corresponding optics labels keep the bare name (`#type`, `#const`, …).
+
+## Migrating from OpenAPI 3.0
+
+The 3.1 data types deliberately cannot represent 3.0-only constructs ("Strategy A"), so a 3.0
+document does not decode directly. Rewrite the **parsed JSON** into a 3.1 shape first, using
+`Data.OpenApi.Migration`:
+
+```haskell
+import Data.Aeson (Value, decode, encode)
+import Data.OpenApi (OpenApi)
+import Data.OpenApi.Migration (migrate30To31)
+
+bring30Forward :: Value -> Maybe OpenApi
+bring30Forward raw30 = decode (encode (migrate30To31 raw30))
+```
+
+`migrate30To31` recurses into every nested schema, rewriting `nullable` → type arrays, boolean
+exclusive bounds → numeric bounds, and tuple `items` arrays → `prefixItems` + `items: false`.
+The single-concern helpers (`migrate30NullableValue`, `migrate30ExclusiveBoundsValue`,
+`migrate30ItemsArrayValue`) are also exported. They are intentionally **deprecated** to flag that
+3.0 input is transitional.
+
+See **[`MIGRATION_3.0_TO_3.1.md`](/MIGRATION_3.0_TO_3.1.md)** for the full breaking-changes list,
+worked examples, and pitfalls.
+
+## Examples
+
+Runnable examples live in the [`examples/`](/examples) directory. Generated specifications can be
+explored interactively in the [Swagger Editor](https://editor.swagger.io/) and served via
+[Swagger UI](https://github.com/swagger-api/swagger-ui).
+
+## Building and developing
+
+This repository ships a Nix flake providing a pinned GHC 9.12.4 toolchain. From the repository
+root:
+
+```bash
+nix develop -c cabal build all
+nix develop -c cabal test all
+```
+
+If you have a matching `cabal` + GHC 9.12.x on your `PATH`, the same commands work without the
+`nix develop -c` prefix. The package is Cabal-only (`build-type: Simple`); there is no `stack.yaml`.
+
+## Documentation
+
+Full API documentation is on
+[Hackage](https://hackage.haskell.org/package/openapi-hs). Each module's Haddocks include
+worked examples.
 
 ## Contributing
 
-We are happy to receive bug reports, fixes, documentation enhancements, and other improvements.
-
-Please report bugs via the [github issue tracker](https://github.com/shinzui/openapi-hs/issues).
-
-*GetShopTV Team*
-
-*Biocad Team*
+Bug reports, fixes, documentation improvements, and other contributions are welcome. Please open
+an issue or pull request on the [GitHub issue tracker](https://github.com/shinzui/openapi-hs/issues).
 
 ## License
 
-`openapi-hs` retains the original BSD-3-Clause license of the upstream
-[`openapi3`](https://github.com/biocad/openapi3) project, including the original copyright. See
-the [`LICENSE`](/LICENSE) file for the full text. This fork's changes are released under the same
-BSD-3-Clause terms.
+`openapi-hs` retains the original **BSD-3-Clause** license of the upstream
+[`openapi3`](https://github.com/biocad/openapi3) project, including its copyright. See the
+[`LICENSE`](/LICENSE) file for the full text; this fork's changes are released under the same
+terms.
+
+---
+
+*Originally derived from work by the GetShopTV and Biocad teams.*
