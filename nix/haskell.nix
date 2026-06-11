@@ -39,7 +39,7 @@
       };
     in
     {
-      packages.default = haskellPackages.callCabal2nix "openapi3-hs" inputs.self { };
+      packages.default = haskellPackages.callCabal2nix "openapi-hs" inputs.self { };
 
       devShells.default = mkProjectShell "ghc9124";
       devShells."ghc9124" = mkProjectShell "ghc9124";

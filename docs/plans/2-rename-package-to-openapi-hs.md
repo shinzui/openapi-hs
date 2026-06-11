@@ -47,18 +47,18 @@ Use a checklist to summarize granular steps. Every stopping point must be docume
 even if it requires splitting a partially completed task into two ("done" vs. "remaining").
 This section must always reflect the actual current state of the work.
 
-- [ ] Milestone 1: Re-read the current `.cabal` and record which state it is in (EP-1 done vs. not done), so later edits are idempotent.
-- [ ] Milestone 1: `git mv openapi3.cabal openapi-hs.cabal` (skip if already renamed).
-- [ ] Milestone 1: Set `name: openapi-hs` in the renamed `.cabal`.
-- [ ] Milestone 1: Update `synopsis`, `description`, `homepage`, `bug-reports`, and `source-repository head location` to the fork identity.
-- [ ] Milestone 1: Change the package self-reference `openapi3` → `openapi-hs` in `test-suite spec` `build-depends`.
-- [ ] Milestone 1: Change the package self-reference `openapi3` → `openapi-hs` in `executable example` `build-depends`.
-- [ ] Milestone 1: If the `test-suite doctests` stanza still exists (EP-1 not yet run), change its `openapi3` self-reference → `openapi-hs`; if EP-1 already removed it, do nothing.
-- [ ] Milestone 2: Update `nix/haskell.nix` `callCabal2nix "openapi3-hs"` → `callCabal2nix "openapi-hs"`.
-- [ ] Milestone 2: Update `.seihou/config.dhall` `project.name` from `"openapi3-hs"` → `"openapi-hs"`.
-- [ ] Milestone 3: Update README badges, title, and Hackage/issue links from the `openapi3` package name to `openapi-hs` (without touching spec-version mentions like "3.0"/"3.1").
-- [ ] Milestone 3: Audit CHANGELOG for any package-name header (leave historical upstream PR URLs untouched).
-- [ ] Validation: `ls *.cabal` shows only `openapi-hs.cabal`; the grep checks below all pass; `cabal build all` and `cabal test all` succeed; `import Data.OpenApi` still compiles.
+- [x] Milestone 1 (2026-06-10): Re-read `.cabal` — EP-1 had already run (`build-type: Simple`, no `doctests` suite), so the doctests self-reference edit was correctly skipped.
+- [x] Milestone 1 (2026-06-10): `git mv openapi3.cabal openapi-hs.cabal`.
+- [x] Milestone 1 (2026-06-10): Set `name: openapi-hs`.
+- [x] Milestone 1 (2026-06-10): Updated `synopsis`, `description`, `homepage`, `bug-reports`, `source-repository head location` to the fork identity (`github.com/shinzui/openapi-hs`).
+- [x] Milestone 1 (2026-06-10): Renamed self-reference `openapi3` → `openapi-hs` in `test-suite spec` `build-depends`.
+- [x] Milestone 1 (2026-06-10): Renamed self-reference `openapi3` → `openapi-hs` in `executable example` `build-depends`.
+- [x] Milestone 1 (2026-06-10): `test-suite doctests` already removed by EP-1 — no doctests self-reference edit needed.
+- [x] Milestone 2 (2026-06-10): Updated `nix/haskell.nix` `callCabal2nix "openapi3-hs"` → `"openapi-hs"`.
+- [x] Milestone 2 (2026-06-10): Updated `.seihou/config.dhall` `project.name` → `"openapi-hs"`. (Generated `.seihou/manifest.json` still records the old value — see Surprises.)
+- [x] Milestone 3 (2026-06-10): Updated README title and Hackage link to `openapi-hs`; removed the dead Travis/Stackage badges; updated the issue-tracker link to the fork.
+- [x] Milestone 3 (2026-06-10): Audited CHANGELOG — only historical upstream PR links reference `openapi3`; left untouched per Decision Log.
+- [x] Validation (2026-06-10): `ls *.cabal` → only `openapi-hs.cabal`; metadata greps pass; `cabal build all` resolves as `openapi-hs-3.2.5` and `cabal test all` passes (375 examples, 0 failures); `(mempty :: OpenApi) :: OpenApi` typechecks in `cabal repl openapi-hs`.
 
 
 ## Surprises & Discoveries
@@ -66,7 +66,23 @@ This section must always reflect the actual current state of the work.
 Document unexpected behaviors, bugs, optimizations, or insights discovered during
 implementation. Provide concise evidence.
 
-(None yet.)
+- **`.seihou/manifest.json` also records `project.name` (2026-06-10).** The plan's Milestone 2
+  acceptance grep `grep -rn "openapi3-hs" nix/ .seihou/` was expected to return nothing after
+  editing `.seihou/config.dhall`, but it still matches `.seihou/manifest.json` (and a stray
+  `.seihou/manifest.json.tmp`), whose `variables` block embeds
+  `"project.name":"openapi3-hs"`. The manifest is **seihou-generated state** (it also stores
+  content hashes), not a hand-authored config. Decision: left the manifest unedited rather than
+  hand-patching generated state — the canonical source `.seihou/config.dhall` is now
+  `openapi-hs`, and seihou regenerates the manifest from it on its next run, which will
+  reconcile the value. Hand-editing was judged riskier (potential hash/state desync) than the
+  cosmetic inconsistency. The `.tmp` file is an unrelated pre-existing atomic-write leftover.
+
+- **Intentional residual `openapi3` mentions in the `.cabal` (2026-06-10).** After the rename,
+  `grep openapi3 openapi-hs.cabal` still matches two lines — the synopsis
+  (`OpenAPI 3.0 data model (openapi-hs fork of openapi3)`) and the description
+  (`openapi-hs is a fork of the openapi3 library...`). These are deliberate prose references to
+  the upstream project, not package-name self-references; the acceptance check that matters
+  (`grep "name:.*openapi3"`) is clean and the build resolves the `openapi-hs` dependency.
 
 
 ## Decision Log
@@ -105,7 +121,24 @@ Record every decision made while working on the plan.
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion.
 Compare the result against the original purpose.
 
-(To be filled during and after implementation.)
+**Completed 2026-06-10.** The Cabal package is now `openapi-hs`, exactly as the Purpose set
+out, with the `Data.OpenApi.*` module namespace untouched:
+
+- `ls *.cabal` shows only `openapi-hs.cabal`; `name: openapi-hs`; identity metadata
+  (synopsis/description/homepage/bug-reports/source-repository) points at the
+  `shinzui/openapi-hs` fork; all package self-references in `test-suite spec` and
+  `executable example` say `openapi-hs`.
+- `nix/haskell.nix` and `.seihou/config.dhall` use `openapi-hs`; README advertises the new
+  name with dead upstream badges removed.
+- `cabal build all` resolves the project as `openapi-hs-3.2.5` and `cabal test all` passes
+  (375 examples, 0 failures); `(mempty :: OpenApi) :: OpenApi` typechecks in
+  `cabal repl openapi-hs`, proving downstream `import Data.OpenApi` is unaffected.
+
+**Ownership boundary respected (IP-1):** `version` stays `3.2.5` (EP-7 bumps to 4.0.0); the
+`license: BSD-3-Clause` value from EP-1 was preserved; `build-type`/`cabal-version`/
+`tested-with`/dependency bounds (EP-1's) were not touched. **Gap:** the seihou-generated
+`.seihou/manifest.json` still records the old `project.name` and will reconcile when seihou
+next regenerates (see Surprises) — no functional impact.
 
 
 ## Context and Orientation

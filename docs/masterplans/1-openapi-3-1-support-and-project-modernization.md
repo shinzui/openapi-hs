@@ -109,7 +109,7 @@ migration plan itself; see Decision Log). See the Decision Log for the full reco
 | # | Title | Path | Hard Deps | Soft Deps | Status |
 |---|-------|------|-----------|-----------|--------|
 | 1 | Modernize Build Toolchain to Cabal and GHC 9.12 | docs/plans/1-modernize-build-toolchain-to-cabal-and-ghc-9-12.md | None | None | Complete |
-| 2 | Rename Package to openapi-hs | docs/plans/2-rename-package-to-openapi-hs.md | None | EP-1 | Not Started |
+| 2 | Rename Package to openapi-hs | docs/plans/2-rename-package-to-openapi-hs.md | None | EP-1 | Complete |
 | 3 | OpenAPI 3.1 Core Schema Type Changes | docs/plans/3-openapi-3-1-core-schema-type-changes.md | None | EP-1 | Not Started |
 | 4 | OpenAPI 3.1 JSON Schema Fields and Reference Keywords | docs/plans/4-openapi-3-1-json-schema-fields-and-reference-keywords.md | EP-3 | EP-1 | Not Started |
 | 5 | OpenAPI 3.1 Top-Level Object Features | docs/plans/5-openapi-3-1-top-level-object-features.md | EP-3 | EP-4 | Not Started |
@@ -225,8 +225,8 @@ milestones complete.
 - [x] EP-1: Remove `stack.yaml`; build with `cabal build all` on GHC 9.12.4 (2026-06-10)
 - [x] EP-1: Switch build-type `Custom` → `Simple`; remove `custom-setup` and `doctests` suite; bump `cabal-version` (2026-06-10)
 - [x] EP-1: Trim `tested-with` to GHC 9.12.x/9.14.x; update dependency bounds; refresh CI workflow (2026-06-10)
-- [ ] EP-2: Rename `.cabal` to `openapi-hs.cabal`, set `name: openapi-hs`, update metadata and self-references
-- [ ] EP-2: Update `nix/haskell.nix` and `.seihou/config.dhall` to the new package name; `cabal build all` passes
+- [x] EP-2: Rename `.cabal` to `openapi-hs.cabal`, set `name: openapi-hs`, update metadata and self-references (2026-06-10)
+- [x] EP-2: Update `nix/haskell.nix` and `.seihou/config.dhall` to the new package name; `cabal build all` passes (2026-06-10)
 - [ ] EP-3: Introduce `OpenApiTypeValue`; change `_schemaType`; hand-written JSON instances round-trip type arrays
 - [ ] EP-3: Change exclusive bounds to `Scientific`; remove `_schemaNullable`; simplify `OpenApiItems` to object|boolean
 - [ ] EP-3: Update version constants to 3.1.x; fix all lenses/optics/compile errors; existing tests updated/pass

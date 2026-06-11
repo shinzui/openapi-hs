@@ -1,17 +1,19 @@
 cabal-version:       3.0
-name:                openapi3
+name:                openapi-hs
 version:             3.2.5
 
-synopsis:            OpenAPI 3.0 data model
+synopsis:            OpenAPI 3.0 data model (openapi-hs fork of openapi3)
 category:            Web, Swagger, OpenApi
 description:
-  This library is intended to be used for decoding and encoding OpenAPI 3.0 API
-  specifications as well as manipulating them.
+  openapi-hs is a fork of the openapi3 library, intended to be used for decoding and
+  encoding OpenAPI 3.0 API specifications as well as manipulating them. The Haskell
+  module namespace remains Data.OpenApi.*, so only the package dependency name changes
+  for downstream users.
   .
   The original OpenAPI 3.0 specification is available at http://swagger.io/specification/.
 
-homepage:            https://github.com/biocad/openapi3
-bug-reports:         https://github.com/biocad/openapi3/issues
+homepage:            https://github.com/shinzui/openapi-hs
+bug-reports:         https://github.com/shinzui/openapi-hs/issues
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Nickolay Kudasov, Maxim Koltsov
@@ -137,7 +139,7 @@ test-suite spec
     , insert-ordered-containers
     , lens
     , mtl
-    , openapi3
+    , openapi-hs
     , template-haskell
     , text
     , time
@@ -169,8 +171,8 @@ executable example
   hs-source-dirs:   examples
   main-is:          hackage.hs
   default-language: Haskell2010
-  build-depends:    base, aeson, lens, openapi3, text
+  build-depends:    base, aeson, lens, openapi-hs, text
 
 source-repository head
   type:     git
-  location: https://github.com/biocad/openapi3.git
+  location: https://github.com/shinzui/openapi-hs.git
