@@ -2,6 +2,12 @@
 
 [![Hackage](https://img.shields.io/hackage/v/openapi-hs.svg)](http://hackage.haskell.org/package/openapi-hs)
 
+> **Fork notice.** `openapi-hs` is a fork of [`openapi3`](https://github.com/biocad/openapi3),
+> which is no longer actively maintained and supports only OpenAPI 3.0. This fork updates the
+> library to **OpenAPI 3.1 / JSON Schema 2020-12**. The Haskell module namespace remains
+> `Data.OpenApi.*`, so downstream code only swaps the dependency name `openapi3` → `openapi-hs`.
+> The fork preserves the original BSD-3-Clause license and copyright — see [License](#license).
+
 OpenAPI 3.1 data model.
 
 The OpenAPI 3.1 specification is available at https://spec.openapis.org/oas/v3.1.0.
@@ -38,3 +44,10 @@ Please report bugs via the [github issue tracker](https://github.com/shinzui/ope
 *GetShopTV Team*
 
 *Biocad Team*
+
+## License
+
+`openapi-hs` retains the original BSD-3-Clause license of the upstream
+[`openapi3`](https://github.com/biocad/openapi3) project, including the original copyright. See
+the [`LICENSE`](/LICENSE) file for the full text. This fork's changes are released under the same
+BSD-3-Clause terms.
