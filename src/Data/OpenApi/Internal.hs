@@ -94,11 +94,25 @@ data OpenApi = OpenApi
 
 -- | This is the lower version of the OpenApi Spec this library can parse or produce
 lowerOpenApiSpecVersion :: Version
-lowerOpenApiSpecVersion = makeVersion [3, 0, 0]
+lowerOpenApiSpecVersion = makeVersion [3, 1, 0]
 
 -- | This is the upper version of the OpenApi Spec this library can parse or produce
 upperOpenApiSpecVersion :: Version
-upperOpenApiSpecVersion = makeVersion [3, 0, 3]
+upperOpenApiSpecVersion = makeVersion [3, 1, 1]
+
+-- | Coarse major version of an OpenAPI document, used to route a parsed document
+-- to the appropriate decoder (e.g. EP-7's @Value@-layer 3.0→3.1 migration helpers).
+-- This is NOT stored on any type and does not keep two representations alive; it
+-- only tells a reader which migration path to take.
+data OpenApiMajorVersion = OpenApi30 | OpenApi31
+  deriving (Eq, Show, Generic, Data, Typeable)
+
+-- | Classify an 'OpenApiSpecVersion' as 3.0.x or 3.1.x (anything @>= 3.1@ is treated
+-- as 3.1).
+detectVersion :: OpenApiSpecVersion -> OpenApiMajorVersion
+detectVersion v
+  | versionBranch (getVersion v) >= [3, 1] = OpenApi31
+  | otherwise                              = OpenApi30
 
 -- | The object provides metadata about the API.
 -- The metadata MAY be used by the clients if needed,
@@ -1012,7 +1026,7 @@ instance Semigroup OpenApiSpecVersion where
   (<>) (OpenApiSpecVersion a) (OpenApiSpecVersion b) = OpenApiSpecVersion $ max a b
 
 instance Monoid OpenApiSpecVersion where
-  mempty = OpenApiSpecVersion (makeVersion [3,0,0])
+  mempty = OpenApiSpecVersion (makeVersion [3,1,0])
   mappend = (<>)
 
 instance Semigroup OpenApi where
@@ -1646,7 +1660,7 @@ instance HasSwaggerAesonOptions Link where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "link"
 
 instance AesonDefaultValue Version where
-  defaultValue = Just (makeVersion [3,0,0])
+  defaultValue = Just (makeVersion [3,1,0])
 instance AesonDefaultValue OpenApiSpecVersion
 instance AesonDefaultValue Server
 instance AesonDefaultValue Components

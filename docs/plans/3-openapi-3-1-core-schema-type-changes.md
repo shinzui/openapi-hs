@@ -88,8 +88,8 @@ partially done item into a done half and a remaining half rather than leaving it
 - [x] M3 (2026-06-10): Rewrote `ToJSON OpenApiItems` (boolean emits `object ["items" .= b]`), removed the `FromJSON Schema` nullary cleanup, rewrote `FromJSON OpenApiItems` (Bool|Object). The `saoSubObject ?~ "items"` splice needed **no** change — it lifts the single `"items"` key from the wrapper object for both cases (verified empirically).
 - [x] M3 (2026-06-10): Fixed all `OpenApiItemsArray` sites (tuple machinery, Generator, Validation, Lens `_OpenApiItemsBoolean`, Optics). Tuple derivation collapses to an `anyOf` `items` element (see Surprises/Decision Log) with `minItems`/`maxItems` = N; ISPair golden updated.
 - [x] M3 (2026-06-10): `{"items":false}`/`{"items":true}` and homogeneous-array round-trips verified; full suite green (375 examples, 0 failures, 5 pending tuple-generator cases deferred to EP-4).
-- [ ] M4: Update version constants to `[3,1,0]`/`[3,1,1]`; add `OpenApiMajorVersion` + `detectVersion`.
-- [ ] M4: `nix develop -c cabal build all` and `nix develop -c cabal test all` are green across the whole tree.
+- [x] M4 (2026-06-10): Version bounds `lowerOpenApiSpecVersion = [3,1,0]`, `upperOpenApiSpecVersion = [3,1,1]`; also bumped the `Monoid`/`AesonDefaultValue` defaults to `[3,1,0]` (else `mempty :: OpenApi` would fall outside the new range and fail to round-trip). Added `OpenApiMajorVersion`/`detectVersion`, exported from `Data.OpenApi`. Updated version test fixtures (3.0.0/3.0.3 → 3.1.0; out-of-range error message) and stale `"openapi": "3.0.0"` Haddock examples. Added `test/Data/OpenApi/Schema/CoreTypes31Spec.hs` (registered in the cabal test-suite).
+- [x] M4 (2026-06-10): `cabal build all` (incl. the `example` exe) and `cabal test all` are green across the whole tree (383 examples, 0 failures, 5 pending).
 
 
 ## Surprises & Discoveries
@@ -201,7 +201,34 @@ implementation. Provide concise evidence (test output is ideal).
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion. Compare the
 result against the original purpose.
 
-(To be filled during and after implementation.)
+**Completed 2026-06-10.** All four headline 3.1 behaviors from the Purpose work, and the whole
+tree compiles and tests in its new 3.1 shape:
+
+- Type arrays: `{"type":["string","null"]}` decodes/round-trips; a single type still emits a
+  bare string. (`OpenApiTypeValue`, IP-4 `OpenApiNull` preserved.)
+- Numeric exclusive bounds: `{"exclusiveMinimum":0,"exclusiveMaximum":100}` round-trips;
+  `validateNumber` treats them as independent strict keywords.
+- `nullable` removed entirely (no field to emit it).
+- `items` is object-or-boolean: `{"items":false}`/`{"items":true}` round-trip; tuple `items`
+  arrays are gone.
+- Version bounds are 3.1.0–3.1.1; `detectVersion`/`OpenApiMajorVersion` added for EP-7's router.
+
+`cabal build all` + `cabal test all` green: 383 examples, 0 failures, 5 pending.
+
+**Gaps / deferred to EP-4 (all marked `TODO(EP-4)`):**
+- Tuple `ToSchema` derivation collapses to an `anyOf` `items` element (homogenised) instead of
+  the proper positional `prefixItems`. Five positional-tuple generator round-trip props are
+  `xprop` (pending) because the generator can't reconstruct positions from a homogenised schema.
+  EP-4 must restore tuple derivation via `prefixItems` and un-pend these (this tightens the
+  EP-3→EP-4 hard dependency — see the MasterPlan Surprises).
+- The `oneOf`→`anyOf` correction (overlapping member types) is documented in Surprises; the
+  validator does not yet actively check `anyOf` (permissive), which EP-6 can refine.
+
+**Deviation from the written plan:** the plan only listed the version *bounds*; I also had to
+bump the `Monoid`/`AesonDefaultValue` default version to 3.1.0 so `mempty :: OpenApi`
+round-trips. The `saoSubObject` "key insight" held — no `AesonUtils.hs` change was needed.
+Field order: `_schemaNullable` was removed but all other `Schema` fields kept their order, so
+EP-4's appends stay clean (IP-2).
 
 
 ## Context and Orientation

@@ -110,7 +110,7 @@ migration plan itself; see Decision Log). See the Decision Log for the full reco
 |---|-------|------|-----------|-----------|--------|
 | 1 | Modernize Build Toolchain to Cabal and GHC 9.12 | docs/plans/1-modernize-build-toolchain-to-cabal-and-ghc-9-12.md | None | None | Complete |
 | 2 | Rename Package to openapi-hs | docs/plans/2-rename-package-to-openapi-hs.md | None | EP-1 | Complete |
-| 3 | OpenAPI 3.1 Core Schema Type Changes | docs/plans/3-openapi-3-1-core-schema-type-changes.md | None | EP-1 | In Progress |
+| 3 | OpenAPI 3.1 Core Schema Type Changes | docs/plans/3-openapi-3-1-core-schema-type-changes.md | None | EP-1 | Complete |
 | 4 | OpenAPI 3.1 JSON Schema Fields and Reference Keywords | docs/plans/4-openapi-3-1-json-schema-fields-and-reference-keywords.md | EP-3 | EP-1 | Not Started |
 | 5 | OpenAPI 3.1 Top-Level Object Features | docs/plans/5-openapi-3-1-top-level-object-features.md | EP-3 | EP-4 | Not Started |
 | 6 | OpenAPI 3.1 Schema Validation | docs/plans/6-openapi-3-1-schema-validation.md | EP-3, EP-4 | None | Not Started |
@@ -227,9 +227,9 @@ milestones complete.
 - [x] EP-1: Trim `tested-with` to GHC 9.12.x/9.14.x; update dependency bounds; refresh CI workflow (2026-06-10)
 - [x] EP-2: Rename `.cabal` to `openapi-hs.cabal`, set `name: openapi-hs`, update metadata and self-references (2026-06-10)
 - [x] EP-2: Update `nix/haskell.nix` and `.seihou/config.dhall` to the new package name; `cabal build all` passes (2026-06-10)
-- [ ] EP-3: Introduce `OpenApiTypeValue`; change `_schemaType`; hand-written JSON instances round-trip type arrays
-- [ ] EP-3: Change exclusive bounds to `Scientific`; remove `_schemaNullable`; simplify `OpenApiItems` to object|boolean
-- [ ] EP-3: Update version constants to 3.1.x; fix all lenses/optics/compile errors; existing tests updated/pass
+- [x] EP-3: Introduce `OpenApiTypeValue`; change `_schemaType`; hand-written JSON instances round-trip type arrays (2026-06-10)
+- [x] EP-3: Change exclusive bounds to `Scientific`; remove `_schemaNullable`; simplify `OpenApiItems` to object|boolean (2026-06-10)
+- [x] EP-3: Update version constants to 3.1.x; fix all lenses/optics/compile errors; existing tests updated/pass (2026-06-10)
 - [ ] EP-4: Spike + decide `$ref`-with-siblings and boolean-schema representation; build the `$`-key serialization helper
 - [ ] EP-4: Add JSON Schema fields (`prefixItems`, `const`, conditionals, `contains*`, `unevaluated*`, content*, `examples`)
 - [ ] EP-4: Add `$id`/`$anchor`/`$defs`/`$ref`/`$dynamicRef`/`$dynamicAnchor`; round-trip all new fields
@@ -256,6 +256,26 @@ implementation.
 - **Discovery (EP-1 implementation, 2026-06-10): dev-shell cabal is 3.16.1.0.** Higher than the
   EP-1 plan's example transcript (3.12.1.0); acceptance only required ≥ 3.12. No action needed,
   but later plans' transcripts may likewise differ from any hand-written expectation.
+
+- **Discovery (EP-3 implementation, 2026-06-10): the EP-3 tuple stub uses `anyOf`, and EP-4
+  must un-pend 5 generator tests.** EP-3 collapsed tuple `ToSchema` derivation to a single
+  `items` object whose element is the **`anyOf`** of the member schemas (not `oneOf` — an
+  integer matches both `Integer` and `Number`, which `oneOf` would reject). Because positional
+  type info is lost, `validateFromJSON` round-trips for heterogeneous tuples cannot hold, so
+  five `GeneratorSpec` props — `(IntMap String)`, `(Int,String)`, `(Int,String,Double)`,
+  `(Int,String,Double,[Int])`, `(Int,String,Double,[Int],Int)` — are `xprop` (pending) with
+  `TODO(EP-4)`. **EP-4's `prefixItems` milestone must:** (a) switch `appendItem` and the two
+  `sketch*` array helpers in `src/Data/OpenApi/Internal/Schema.hs` from the `anyOf`-`items`
+  collapse to true `prefixItems`; (b) update the `ISPair` golden
+  (`test/Data/OpenApi/CommonTestTypes.hs`, currently the `anyOf` form); and (c) restore those
+  five props from `xprop` to `prop`. This concretises the next discovery's tuple note.
+
+- **Discovery (EP-3 implementation, 2026-06-10): default OpenAPI version had to move to 3.1.0.**
+  Beyond the version *bounds*, EP-3 bumped the `Monoid OpenApiSpecVersion` `mempty` and the
+  `AesonDefaultValue Version` default to `[3,1,0]`. Otherwise `mempty :: OpenApi` serialises
+  `"openapi":"3.0.0"`, which is now outside the valid `[3.1.0, 3.1.1]` range and fails to
+  decode — breaking round-trip of the empty document. EP-7's release/test work should assume the
+  default emitted version is `3.1.0`.
 
 - **Discovery (during plan authoring, 2026-06-10): EP-3 and EP-4 are coupled through generic
   tuple `ToSchema` derivation.** The generic `ToSchema` instances in

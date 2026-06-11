@@ -42,7 +42,7 @@ spec = do
     context "Example with no paths" $ do 
       emptyPathsFieldExample <=> emptyPathsFieldExampleJSON
       it "fails to parse a spec with a wrong Openapi spec version" $ do
-        (fromJSON wrongVersionExampleJSON :: Result OpenApi) `shouldBe` Error "The provided version 3.0.4 is out of the allowed range >=3.0.0 && <=3.0.3"
+        (fromJSON wrongVersionExampleJSON :: Result OpenApi) `shouldBe` Error "The provided version 3.0.4 is out of the allowed range >=3.1.0 && <=3.1.1"
     context "Todo Example" $ swaggerExample <=> swaggerExampleJSON
     context "PetStore Example" $ do
       it "decodes successfully" $ do
@@ -598,7 +598,7 @@ wrongVersionExampleJSON = [aesonQQ|
 emptyPathsFieldExampleJSON :: Value
 emptyPathsFieldExampleJSON = [aesonQQ|
 {
-  "openapi": "3.0.0",
+  "openapi": "3.1.0",
   "info": {"version": "", "title": ""},
   "paths": {},
   "components": {}
@@ -645,7 +645,7 @@ swaggerExample = mempty
 swaggerExampleJSON :: Value
 swaggerExampleJSON = [aesonQQ|
 {
-    "openapi": "3.0.0",
+    "openapi": "3.1.0",
     "info": {
         "version": "1.0",
         "title": "Todo API",
@@ -708,7 +708,7 @@ swaggerExampleJSON = [aesonQQ|
 petstoreExampleJSON :: Value
 petstoreExampleJSON = [aesonQQ|
 {
-  "openapi": "3.0.3",
+  "openapi": "3.1.0",
   "info": {
     "version": "1.0.0",
     "title": "Swagger Petstore",
