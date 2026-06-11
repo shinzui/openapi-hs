@@ -140,15 +140,15 @@ operationExample = mempty
     & description ?~ "ID of pet that needs to be updated"
     & required ?~ True
     & in_ .~ ParamPath
-    & schema ?~ Inline (mempty & type_ ?~ OpenApiString))]
+    & schema ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))]
   & requestBody ?~ Inline (
     mempty & content . at "application/x-www-form-urlencoded" ?~ (mempty & schema ?~ (Inline (mempty
       & properties . at "petId" ?~ Inline (mempty
         & description ?~ "Updated name of the pet"
-        & type_ ?~ OpenApiString)
+        & type_ ?~ OpenApiTypeSingle OpenApiString)
       & properties . at "status" ?~ Inline (mempty
         & description ?~ "Updated status of the pet"
-        & type_ ?~ OpenApiString)))))
+        & type_ ?~ OpenApiTypeSingle OpenApiString)))))
   & at 200 ?~ "Pet updated."
   & at 405 ?~ "Invalid input"
   & security .~ [SecurityRequirement [("petstore_auth", ["write:pets", "read:pets"])]]
@@ -216,7 +216,7 @@ operationExampleJSON = [aesonQQ|
 
 schemaPrimitiveExample :: Schema
 schemaPrimitiveExample = mempty
-  & type_  ?~ OpenApiString
+  & type_  ?~ OpenApiTypeSingle OpenApiString
   & format ?~ "email"
 
 schemaPrimitiveExampleJSON :: Value
@@ -229,14 +229,14 @@ schemaPrimitiveExampleJSON = [aesonQQ|
 
 schemaSimpleModelExample :: Schema
 schemaSimpleModelExample = mempty
-  & type_ ?~ OpenApiObject
+  & type_ ?~ OpenApiTypeSingle OpenApiObject
   & required .~ [ "name" ]
   & properties .~
-      [ ("name", Inline (mempty & type_ ?~ OpenApiString))
+      [ ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))
       , ("address", Ref (Reference "Address"))
       , ("age", Inline $ mempty
             & minimum_ ?~ 0
-            & type_    ?~ OpenApiInteger
+            & type_    ?~ OpenApiTypeSingle OpenApiInteger
             & format   ?~ "int32" ) ]
 
 schemaSimpleModelExampleJSON :: Value
@@ -261,8 +261,8 @@ schemaSimpleModelExampleJSON = [aesonQQ|
 
 schemaModelDictExample :: Schema
 schemaModelDictExample = mempty
-  & type_ ?~ OpenApiObject
-  & additionalProperties ?~ AdditionalPropertiesSchema (Inline (mempty & type_ ?~ OpenApiString))
+  & type_ ?~ OpenApiTypeSingle OpenApiObject
+  & additionalProperties ?~ AdditionalPropertiesSchema (Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))
 
 schemaModelDictExampleJSON :: Value
 schemaModelDictExampleJSON = [aesonQQ|
@@ -276,7 +276,7 @@ schemaModelDictExampleJSON = [aesonQQ|
 
 schemaAdditionalExample :: Schema
 schemaAdditionalExample = mempty
-  & type_ ?~ OpenApiObject
+  & type_ ?~ OpenApiTypeSingle OpenApiObject
   & additionalProperties ?~ AdditionalPropertiesAllowed True
 
 schemaAdditionalExampleJSON :: Value
@@ -289,13 +289,13 @@ schemaAdditionalExampleJSON = [aesonQQ|
 
 schemaWithExampleExample :: Schema
 schemaWithExampleExample = mempty
-  & type_ ?~ OpenApiObject
+  & type_ ?~ OpenApiTypeSingle OpenApiObject
   & properties .~
       [ ("id", Inline $ mempty
-            & type_  ?~ OpenApiInteger
+            & type_  ?~ OpenApiTypeSingle OpenApiInteger
             & format ?~ "int64" )
       , ("name", Inline $ mempty
-            & type_ ?~ OpenApiString) ]
+            & type_ ?~ OpenApiTypeSingle OpenApiString) ]
   & required .~ [ "name" ]
   & example ?~ [aesonQQ|
     {
@@ -334,19 +334,19 @@ schemaWithExampleExampleJSON = [aesonQQ|
 definitionsExample :: HashMap Text Schema
 definitionsExample =
   [ ("Category", mempty
-      & type_ ?~ OpenApiObject
+      & type_ ?~ OpenApiTypeSingle OpenApiObject
       & properties .~
           [ ("id", Inline $ mempty
-              & type_  ?~ OpenApiInteger
+              & type_  ?~ OpenApiTypeSingle OpenApiInteger
               & format ?~ "int64")
-          , ("name", Inline (mempty & type_ ?~ OpenApiString)) ] )
+          , ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString)) ] )
   , ("Tag", mempty
-      & type_ ?~ OpenApiObject
+      & type_ ?~ OpenApiTypeSingle OpenApiObject
       & properties .~
           [ ("id", Inline $ mempty
-              & type_  ?~ OpenApiInteger
+              & type_  ?~ OpenApiTypeSingle OpenApiInteger
               & format ?~ "int64")
-          , ("name", Inline (mempty & type_ ?~ OpenApiString)) ] ) ]
+          , ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString)) ] ) ]
 
 definitionsExampleJSON :: Value
 definitionsExampleJSON = [aesonQQ|
@@ -390,7 +390,7 @@ paramsDefinitionExample =
       & required ?~ True
       & in_    .~ ParamQuery
       & schema ?~ Inline (mempty
-          & type_  ?~ OpenApiInteger
+          & type_  ?~ OpenApiTypeSingle OpenApiInteger
           & format ?~ "int32" ))
   , ("limitParam", mempty
       & name .~ "limit"
@@ -398,7 +398,7 @@ paramsDefinitionExample =
       & required ?~ True
       & in_    .~ ParamQuery
       & schema ?~ Inline (mempty
-          & type_  ?~ OpenApiInteger
+          & type_  ?~ OpenApiTypeSingle OpenApiInteger
           & format ?~ "int32" )) ]
 
 paramsDefinitionExampleJSON :: Value
@@ -620,7 +620,7 @@ swaggerExample = mempty
           & description .~ "OK"
           & content . at "application/json" ?~ (mempty
               & schema ?~ Inline (mempty
-                  & type_ ?~ OpenApiObject
+                  & type_ ?~ OpenApiTypeSingle OpenApiObject
                   & example ?~ [aesonQQ|
                       {
                         "created": 100,
@@ -629,9 +629,9 @@ swaggerExample = mempty
                   & description ?~ "This is some real Todo right here"
                   & properties .~
                      [ ("created", Inline $ mempty
-                         & type_  ?~ OpenApiInteger
+                         & type_  ?~ OpenApiTypeSingle OpenApiInteger
                          & format ?~ "int32")
-                     , ("description", Inline (mempty & type_ ?~ OpenApiString))])))
+                     , ("description", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))])))
       & parameters .~
           [ Inline $ mempty
               & required ?~ True
@@ -639,7 +639,7 @@ swaggerExample = mempty
               & description ?~ "TodoId param"
               & in_ .~ ParamPath
               & schema ?~ Inline (mempty
-                  & type_ ?~ OpenApiString ) ]
+                  & type_ ?~ OpenApiTypeSingle OpenApiString ) ]
       & tags .~ InsOrdHS.fromList [ "todo" ] ))
 
 swaggerExampleJSON :: Value
@@ -981,10 +981,10 @@ compositionSchemaExample = mempty
   & Data.OpenApi.allOf ?~ [
       Ref (Reference "Other")
     , Inline (mempty
-             & type_ ?~ OpenApiObject
+             & type_ ?~ OpenApiTypeSingle OpenApiObject
              & properties .~
                   [ ("greet", Inline $ mempty
-                            & type_ ?~ OpenApiString) ])
+                            & type_ ?~ OpenApiTypeSingle OpenApiString) ])
   ]
 
 compositionSchemaExampleJSON :: Value

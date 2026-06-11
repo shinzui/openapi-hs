@@ -74,11 +74,11 @@ reverse where a canonical JSON form exists). "Lossless" means the same.
 This checklist is the authoritative current state. Update it at every stopping point; split a
 partially done item into a done half and a remaining half rather than leaving it ambiguous.
 
-- [ ] M1: Introduce `OpenApiTypeValue` (single | array) with hand-written `ToJSON`/`FromJSON`.
-- [ ] M1: Change `_schemaType :: Maybe OpenApiType` → `Maybe OpenApiTypeValue` (Internal.hs).
-- [ ] M1: Add the `pattern`/helper layer so existing `type_ ?~ OpenApiString` call sites keep working (see Plan of Work, "The `type_` ergonomics problem").
-- [ ] M1: Update `type_` lens (Lens.hs) and `#type` optic (Optics.hs) to target `Maybe OpenApiTypeValue`.
-- [ ] M1: Round-trip test for `{"type":["string","null"]}` passes (the key acceptance).
+- [x] M1 (2026-06-10): Introduced `OpenApiTypeValue` (single | array) with hand-written `ToJSON`/`FromJSON` + `SwaggerMonoid`.
+- [x] M1 (2026-06-10): Changed `_schemaType :: Maybe OpenApiType` → `Maybe OpenApiTypeValue` (Internal.hs); exported `OpenApiTypeValue(..)`/`singleType` from `Data.OpenApi`.
+- [x] M1 (2026-06-10): Used explicit `OpenApiTypeSingle` at all ~50 `type_ ?~` set-sites (src + tests, via perl normalization preserving spacing) and `singleType` at read-sites; added `schemaTypes` normalizer in Validation.
+- [x] M1 (2026-06-10): Updated `HasType NamedSchema` (Lens.hs) and `#type` (Optics.hs) to `Maybe OpenApiTypeValue`.
+- [x] M1 (2026-06-10): Round-trip verified in repl: `{"type":["string","null"]}` encodes/round-trips; single type stays `{"type":"string"}`. Full suite green (375 examples, 0 failures).
 - [ ] M2: Change `_schemaExclusiveMaximum`/`_schemaExclusiveMinimum` to `Maybe Scientific` (Internal.hs).
 - [ ] M2: Update `HasExclusiveMaximum`/`HasExclusiveMinimum` instances in Lens.hs and the optics in Optics.hs from `Maybe Bool` to `Maybe Scientific`.
 - [ ] M2: Fix the two `?~ False`/`Just True ==` boolean usages (ParamSchema.hs, Validation.hs) and confirm `AesonDefaultValue`/round-trip still holds.

@@ -33,10 +33,10 @@ schemaGen _ schema
 schemaGen defns schema
     | Just variants <- schema ^. oneOf = schemaGen defns =<< elements (dereference defns <$> variants)
 schemaGen defns schema =
-    case schema ^. type_ of
+    case singleType =<< schema ^. type_ of
       Nothing ->
         case inferSchemaTypes schema of
-          [ inferredType ] -> schemaGen defns (schema & type_ ?~ inferredType)
+          [ inferredType ] -> schemaGen defns (schema & type_ ?~ OpenApiTypeSingle inferredType)
           -- Gen is not MonadFail
           _ -> error "unable to infer schema type"
       Just OpenApiBoolean -> Bool <$> elements [True, False]

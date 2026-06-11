@@ -194,8 +194,8 @@ instance At   Operation where
 -- #type
 
 instance
-  ( a ~ Maybe OpenApiType
-  , b ~ Maybe OpenApiType
+  ( a ~ Maybe OpenApiTypeValue
+  , b ~ Maybe OpenApiTypeValue
   ) => LabelOptic "type" A_Lens NamedSchema NamedSchema a b where
   labelOptic = #schema % #type
   {-# INLINE labelOptic #-}

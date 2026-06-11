@@ -466,6 +466,38 @@ inferParamSchemaTypes sch = concat
         , has (pattern._Just) ] ]
   ]
 
+-- | The list of primitive types a schema's @type@ keyword permits:
+-- a single type becomes a singleton list, a type array becomes its list,
+-- and an absent @type@ becomes the empty list (callers fall back to the
+-- value's natural shape).
+schemaTypes :: Schema -> [OpenApiType]
+schemaTypes sch = case sch ^. type_ of
+  Nothing                    -> []
+  Just (OpenApiTypeSingle t) -> [t]
+  Just (OpenApiTypeArray ts) -> ts
+
+-- | Validate a value assuming the schema's @type@ is exactly the given single type.
+validateOfType :: OpenApiType -> Value -> Validation Schema ()
+validateOfType ty val = case (ty, val) of
+  (OpenApiNull,    Null)     -> valid
+  (OpenApiBoolean, Bool _)   -> valid
+  (OpenApiInteger, Number n) -> validateInteger n
+  (OpenApiNumber,  Number n) -> validateNumber n
+  (OpenApiString,  String s) -> validateString s
+  (OpenApiArray,   Array xs) -> validateArray xs
+  (OpenApiObject,  Object o) -> validateObject o
+  _ -> invalid $ "expected JSON value of type " ++ showType (Just ty, val)
+
+-- | Validate a value when the schema declares no @type@ (fall back to the value's shape).
+validateByValueShape :: Value -> Validation Schema ()
+validateByValueShape val = case val of
+  Null     -> valid
+  Bool _   -> valid
+  Number n -> validateNumber n
+  String s -> validateString s
+  Array xs -> validateArray xs
+  Object o -> validateObject o
+
 validateSchemaType :: Value -> Validation Schema ()
 validateSchemaType val = withSchema $ \sch ->
   case sch of
@@ -483,37 +515,45 @@ validateSchemaType val = withSchema $ \sch ->
         validateWithSchemaRef var val
 
     _ ->
-      case (sch ^. type_, val) of
-        (Just OpenApiNull,    Null)       -> valid
-        (Just OpenApiBoolean, Bool _)     -> valid
-        (Just OpenApiInteger, Number n)   -> validateInteger n
-        (Just OpenApiNumber,  Number n)   -> validateNumber n
-        (Just OpenApiString,  String s)   -> validateString s
-        (Just OpenApiArray,   Array xs)   -> validateArray xs
-        (Just OpenApiObject,  Object o)   -> validateObject o
-        (Nothing, Null)                   -> valid
-        (Nothing, Bool _)                 -> valid
-        -- Number by default
-        (Nothing, Number n)               -> validateNumber n
-        (Nothing, String s)               -> validateString s
-        (Nothing, Array xs)               -> validateArray xs
-        (Nothing, Object o)               -> validateObject o
-        bad -> invalid $ "expected JSON value of type " ++ showType bad
+      case schemaTypes sch of
+        []   -> validateByValueShape val
+        [ty] -> validateOfType ty val
+        -- 3.1 type array: the value is valid if it matches any listed type.
+        tys  -> do
+          oks <- forM tys $ \ty -> (True <$ validateOfType ty val) <|> return False
+          when (not (or oks)) $
+            invalid $ "expected JSON value of one of types " ++ show tys
+                      ++ " but got " ++ showType (Nothing, val)
 
 validateParamSchemaType :: Value -> Validation Schema ()
 validateParamSchemaType val = withSchema $ \sch ->
-  case (sch ^. type_, val) of
-    (Just OpenApiBoolean, Bool _)     -> valid
-    (Just OpenApiInteger, Number n)   -> validateInteger n
-    (Just OpenApiNumber,  Number n)   -> validateNumber n
-    (Just OpenApiString,  String s)   -> validateString s
-    (Just OpenApiArray,   Array xs)   -> validateArray xs
-    (Nothing, Bool _)                 -> valid
-    -- Number by default
-    (Nothing, Number n)               -> validateNumber n
-    (Nothing, String s)               -> validateString s
-    (Nothing, Array xs)               -> validateArray xs
-    bad -> invalid $ "expected JSON value of type " ++ showType bad
+  case schemaTypes sch of
+    []   -> validateParamByValueShape val
+    [ty] -> validateParamOfType ty val
+    tys  -> do
+      oks <- forM tys $ \ty -> (True <$ validateParamOfType ty val) <|> return False
+      when (not (or oks)) $
+        invalid $ "expected JSON value of one of types " ++ show tys
+                  ++ " but got " ++ showType (Nothing, val)
+
+-- | Validate a value assuming a single @type@, restricted to the kinds a
+-- parameter schema may have (no @null@ or @object@).
+validateParamOfType :: OpenApiType -> Value -> Validation Schema ()
+validateParamOfType ty val = case (ty, val) of
+  (OpenApiBoolean, Bool _)   -> valid
+  (OpenApiInteger, Number n) -> validateInteger n
+  (OpenApiNumber,  Number n) -> validateNumber n
+  (OpenApiString,  String s) -> validateString s
+  (OpenApiArray,   Array xs) -> validateArray xs
+  _ -> invalid $ "expected JSON value of type " ++ showType (Just ty, val)
+
+validateParamByValueShape :: Value -> Validation Schema ()
+validateParamByValueShape val = case val of
+  Bool _   -> valid
+  Number n -> validateNumber n
+  String s -> validateString s
+  Array xs -> validateArray xs
+  _        -> invalid $ "expected JSON value of type " ++ showType (Nothing, val)
 
 showType :: (Maybe OpenApiType, Value) -> String
 showType (Just ty, _)        = show ty

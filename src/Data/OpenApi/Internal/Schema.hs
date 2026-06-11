@@ -105,7 +105,7 @@ rename name (NamedSchema _ schema) = NamedSchema name schema
 --   declareNamedSchema _ = do
 --     doubleSchema <- declareSchemaRef (Proxy :: Proxy Double)
 --     return $ NamedSchema (Just \"Coord\") $ mempty
---       & type_ ?~ OpenApiObject
+--       & type_ ?~ OpenApiTypeSingle OpenApiObject
 --       & properties .~
 --           [ (\"x\", doubleSchema)
 --           , (\"y\", doubleSchema)
@@ -383,12 +383,12 @@ sketchSchema = sketch . toJSON
     sketch js@(Bool _) = go js
     sketch js = go js & example ?~ js
 
-    go Null       = mempty & type_ ?~ OpenApiNull
-    go (Bool _)   = mempty & type_ ?~ OpenApiBoolean
-    go (String _) = mempty & type_ ?~ OpenApiString
-    go (Number _) = mempty & type_ ?~ OpenApiNumber
+    go Null       = mempty & type_ ?~ OpenApiTypeSingle OpenApiNull
+    go (Bool _)   = mempty & type_ ?~ OpenApiTypeSingle OpenApiBoolean
+    go (String _) = mempty & type_ ?~ OpenApiTypeSingle OpenApiString
+    go (Number _) = mempty & type_ ?~ OpenApiTypeSingle OpenApiNumber
     go (Array xs) = mempty
-      & type_   ?~ OpenApiArray
+      & type_   ?~ OpenApiTypeSingle OpenApiArray
       & items ?~ case ischema of
           Just s -> OpenApiItemsObject (Inline s)
           _      -> OpenApiItemsArray (map Inline ys)
@@ -400,7 +400,7 @@ sketchSchema = sketch . toJSON
           (z:_) | allSame -> Just z
           _               -> Nothing
     go (Object o) = mempty
-      & type_         ?~ OpenApiObject
+      & type_         ?~ OpenApiTypeSingle OpenApiObject
       & required      .~ sort (objectKeys o)
       & properties    .~ fmap (Inline . go) (toInsOrdHashMap o)
 
@@ -537,24 +537,24 @@ sketchSchema = sketch . toJSON
 sketchStrictSchema :: ToJSON a => a -> Schema
 sketchStrictSchema = go . toJSON
   where
-    go Null       = mempty & type_ ?~ OpenApiNull
+    go Null       = mempty & type_ ?~ OpenApiTypeSingle OpenApiNull
     go js@(Bool _) = mempty
-      & type_ ?~ OpenApiBoolean
+      & type_ ?~ OpenApiTypeSingle OpenApiBoolean
       & enum_ ?~ [js]
     go js@(String s) = mempty
-      & type_ ?~ OpenApiString
+      & type_ ?~ OpenApiTypeSingle OpenApiString
       & maxLength ?~ fromIntegral (T.length s)
       & minLength ?~ fromIntegral (T.length s)
       & pattern   ?~ s
       & enum_     ?~ [js]
     go js@(Number n) = mempty
-      & type_       ?~ OpenApiNumber
+      & type_       ?~ OpenApiTypeSingle OpenApiNumber
       & maximum_    ?~ n
       & minimum_    ?~ n
       & multipleOf  ?~ n
       & enum_       ?~ [js]
     go js@(Array xs) = mempty
-      & type_       ?~ OpenApiArray
+      & type_       ?~ OpenApiTypeSingle OpenApiArray
       & maxItems    ?~ fromIntegral sz
       & minItems    ?~ fromIntegral sz
       & items       ?~ OpenApiItemsArray (map (Inline . go) (V.toList xs))
@@ -564,7 +564,7 @@ sketchStrictSchema = go . toJSON
         sz = length xs
         allUnique = sz == HashSet.size (HashSet.fromList (V.toList xs))
     go js@(Object o) = mempty
-      & type_         ?~ OpenApiObject
+      & type_         ?~ OpenApiTypeSingle OpenApiObject
       & required      .~ sort names
       & properties    .~ fmap (Inline . go) (toInsOrdHashMap o)
       & maxProperties ?~ fromIntegral (length names)
@@ -580,7 +580,7 @@ instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
   declareNamedSchema _ = do
     ref <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
-      & type_ ?~ OpenApiArray
+      & type_ ?~ OpenApiTypeSingle OpenApiArray
       & items ?~ OpenApiItemsObject ref
 
 instance {-# OVERLAPPING #-} ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
@@ -638,7 +638,7 @@ instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f
 
 timeSchema :: T.Text -> Schema
 timeSchema fmt = mempty
-  & type_ ?~ OpenApiString
+  & type_ ?~ OpenApiTypeSingle OpenApiString
   & format ?~ fmt
 
 -- | Format @"date"@ corresponds to @yyyy-mm-dd@ format.
@@ -696,7 +696,7 @@ instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
       declareObjectMapSchema = do
         schema <- declareSchemaRef (Proxy :: Proxy v)
         return $ unnamed $ mempty
-          & type_ ?~ OpenApiObject
+          & type_ ?~ OpenApiTypeSingle OpenApiObject
           & additionalProperties ?~ AdditionalPropertiesSchema schema
 
 instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
@@ -704,7 +704,7 @@ instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
 
 instance {-# OVERLAPPING #-} ToSchema Object where
   declareNamedSchema _ = pure $ NamedSchema (Just "Object") $ mempty
-    & type_ ?~ OpenApiObject
+    & type_ ?~ OpenApiTypeSingle OpenApiObject
     & description ?~ "Arbitrary JSON object."
     & additionalProperties ?~ AdditionalPropertiesAllowed True
 
@@ -749,7 +749,7 @@ instance ToSchema a => ToSchema (Identity a) where declareNamedSchema _ = declar
 -- }
 toSchemaBoundedIntegral :: forall a. (Bounded a, Integral a) => Proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
-  & type_ ?~ OpenApiInteger
+  & type_ ?~ OpenApiTypeSingle OpenApiInteger
   & minimum_ ?~ fromInteger (toInteger (minBound :: a))
   & maximum_ ?~ fromInteger (toInteger (maxBound :: a))
 
@@ -814,7 +814,7 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
       let allKeys   = [minBound..maxBound :: key]
           mkPair k  =  (keyToText $ getKey k, valueRef)
       return $ mempty
-        & type_ ?~ OpenApiObject
+        & type_ ?~ OpenApiTypeSingle OpenApiObject
         & properties .~ InsOrdHashMap.fromList (map mkPair allKeys)
 
 -- | A 'Schema' for a mapping with 'Bounded' 'Enum' keys.
@@ -907,7 +907,7 @@ paramSchemaToSchema = toParamSchema
 
 nullarySchema :: Schema
 nullarySchema = mempty
-  & type_ ?~ OpenApiArray
+  & type_ ?~ OpenApiTypeSingle OpenApiArray
   & items ?~ OpenApiItemsArray []
 
 gtoNamedSchema :: GToSchema f => SchemaOptions -> Proxy f -> NamedSchema
@@ -981,12 +981,12 @@ withFieldSchema opts _ isRequiredField schema = do
   return $
     if T.null fname
       then schema
-        & type_ ?~ OpenApiArray
+        & type_ ?~ OpenApiTypeSingle OpenApiArray
         & items %~ appendItem ref
         & maxItems %~ Just . maybe 1 (+1)   -- increment maxItems
         & minItems %~ Just . maybe 1 (+1)   -- increment minItems
       else schema
-        & type_ ?~ OpenApiObject
+        & type_ ?~ OpenApiTypeSingle OpenApiObject
         & properties . at fname ?~ ref
         & if isRequiredField
             then required %~ (++ [fname])
@@ -1027,7 +1027,7 @@ gdeclareNamedSumSchema opts proxy _
     (sumSchemas, All allNullary) = undeclare (runWriterT declareSumSchema)
 
     toStringTag schemas = mempty
-      & type_ ?~ OpenApiString
+      & type_ ?~ OpenApiTypeSingle OpenApiString
       & enum_ ?~ map (String . fst) sumSchemas
 
 type AllNullary = All
@@ -1056,15 +1056,15 @@ gsumConToSchemaWith ref opts _ = (tag, withTitle)
         case ref of
           -- If subschema is an object and constructor is a record, we add tag directly
           -- to the record, as Aeson does it.
-          Just (Inline sub) | sub ^. type_ == Just OpenApiObject && isRecord -> Inline $ sub
+          Just (Inline sub) | (singleType =<< sub ^. type_) == Just OpenApiObject && isRecord -> Inline $ sub
             & required <>~ [T.pack tagField]
-            & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiString & enum_ ?~ [String tag])
+            & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])
 
           -- If it is not a record, we need to put subschema into "contents" field.
           _ | not isRecord -> Inline $ mempty
-            & type_ ?~ OpenApiObject
+            & type_ ?~ OpenApiTypeSingle OpenApiObject
             & required .~ [T.pack tagField]
-            & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiString & enum_ ?~ [String tag])
+            & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])
               -- If constructor is nullary, there is no content.
             & case ref of
                 Just r -> (properties . at (T.pack contentsField) ?~ r) . (required <>~ [T.pack contentsField])
@@ -1073,15 +1073,15 @@ gsumConToSchemaWith ref opts _ = (tag, withTitle)
           -- In the remaining cases we combine "tag" object and "contents" object using allOf.
           _ -> Inline $ mempty
             & allOf ?~ [Inline $ mempty
-              & type_ ?~ OpenApiObject
+              & type_ ?~ OpenApiTypeSingle OpenApiObject
               & required .~ (T.pack tagField : if isRecord then [] else [T.pack contentsField])
-              & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiString & enum_ ?~ [String tag])]
+              & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])]
             & if isRecord
                  then allOf . _Just <>~ [refOrNullary]
-                 else allOf . _Just <>~ [Inline $ mempty & type_ ?~ OpenApiObject & properties . at (T.pack contentsField) ?~ refOrNullary]
+                 else allOf . _Just <>~ [Inline $ mempty & type_ ?~ OpenApiTypeSingle OpenApiObject & properties . at (T.pack contentsField) ?~ refOrNullary]
       UntaggedValue -> refOrEnum -- Aeson encodes nullary constructors as strings in this case.
       ObjectWithSingleField -> Inline $ mempty
-        & type_ ?~ OpenApiObject
+        & type_ ?~ OpenApiTypeSingle OpenApiObject
         & required .~ [tag]
         & properties . at tag ?~ refOrNullary
       TwoElemArray -> error "unrepresentable in OpenAPI 3"
@@ -1090,7 +1090,7 @@ gsumConToSchemaWith ref opts _ = (tag, withTitle)
     tag = T.pack (constructorTagModifier opts constructorName)
     isRecord = conIsRecord (Proxy3 :: Proxy3 c f p)
     refOrNullary = fromMaybe (Inline nullarySchema) ref
-    refOrEnum = fromMaybe (Inline $ mempty & type_ ?~ OpenApiString & enum_ ?~ [String tag]) ref
+    refOrEnum = fromMaybe (Inline $ mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag]) ref
 
 gsumConToSchema :: (GToSchema (C1 c f), Constructor c) =>
   SchemaOptions -> Proxy (C1 c f) -> Declare (Definitions Schema) [(T.Text, Referenced Schema)]

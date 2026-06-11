@@ -598,6 +598,20 @@ data OpenApiType where
   OpenApiObject   :: OpenApiType
   deriving (Eq, Show, Typeable, Generic, Data)
 
+-- | The value of a schema's @type@ keyword. In OpenAPI 3.1 / JSON Schema 2020-12,
+-- @type@ may be a single type (@"string"@) or an array of types (@["string","null"]@,
+-- the 3.1 way to express nullability — there is no @nullable@ keyword any more).
+data OpenApiTypeValue
+  = OpenApiTypeSingle OpenApiType
+  | OpenApiTypeArray [OpenApiType]
+  deriving (Eq, Show, Generic, Data, Typeable)
+
+-- | Extract a single type if the @type@ value is a single type (not an array).
+-- Returns 'Nothing' for a type array.
+singleType :: OpenApiTypeValue -> Maybe OpenApiType
+singleType (OpenApiTypeSingle t) = Just t
+singleType (OpenApiTypeArray _)  = Nothing
+
 data ParamLocation
   = -- | Parameters that are appended to the URL.
     -- For example, in @/items?id=###@, the query parameter is @id@.
@@ -647,7 +661,7 @@ data Schema = Schema
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
     _schemaDefault :: Maybe Value
 
-  , _schemaType :: Maybe OpenApiType
+  , _schemaType :: Maybe OpenApiTypeValue
   , _schemaFormat :: Maybe Format
   , _schemaItems :: Maybe OpenApiItems
   , _schemaMaximum :: Maybe Scientific
@@ -1147,6 +1161,10 @@ instance SwaggerMonoid OpenApiType where
   swaggerMempty = OpenApiString
   swaggerMappend _ y = y
 
+instance SwaggerMonoid OpenApiTypeValue where
+  swaggerMempty = OpenApiTypeSingle OpenApiString
+  swaggerMappend _ y = y
+
 instance SwaggerMonoid ParamLocation where
   swaggerMempty = ParamQuery
   swaggerMappend _ y = y
@@ -1224,6 +1242,15 @@ instance FromJSON Style where
 
 instance FromJSON OpenApiType where
   parseJSON = genericParseJSON (jsonPrefix "Swagger")
+
+instance ToJSON OpenApiTypeValue where
+  toJSON (OpenApiTypeSingle t) = toJSON t   -- reuses ToJSON OpenApiType -> a JSON string
+  toJSON (OpenApiTypeArray ts) = toJSON ts  -- a JSON array of strings
+
+instance FromJSON OpenApiTypeValue where
+  parseJSON v@(String _) = OpenApiTypeSingle <$> parseJSON v
+  parseJSON v@(Array _)  = OpenApiTypeArray  <$> parseJSON v
+  parseJSON _ = fail "type must be a string or an array of strings"
 
 instance FromJSON ParamLocation where
   parseJSON = genericParseJSON (jsonPrefix "Param")

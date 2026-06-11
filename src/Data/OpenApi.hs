@@ -57,6 +57,8 @@ module Data.OpenApi (
 
   -- ** Types and formats
   OpenApiType(..),
+  OpenApiTypeValue(..),
+  singleType,
   Format,
   Definitions,
   Style(..),
@@ -214,7 +216,7 @@ import Data.OpenApi.Internal
 --
 -- >>> :{
 -- BSL.putStrLn $ encodePretty $ (mempty :: OpenApi)
---   & components . schemas .~ IOHM.fromList [ ("User", mempty & type_ ?~ OpenApiString) ]
+--   & components . schemas .~ IOHM.fromList [ ("User", mempty & type_ ?~ OpenApiTypeSingle OpenApiString) ]
 --   & paths .~
 --     IOHM.fromList [ ("/user", mempty & get ?~ (mempty
 --         & at 200 ?~ ("OK" & _Inline.content.at "application/json" ?~ (mempty & schema ?~ Ref (Reference "User")))
@@ -272,7 +274,7 @@ import Data.OpenApi.Internal
 -- }
 -- >>> :{
 -- BSL.putStrLn $ encodePretty $ (mempty :: Schema)
---   & type_       ?~ OpenApiBoolean
+--   & type_       ?~ OpenApiTypeSingle OpenApiBoolean
 --   & description ?~ "To be or not to be"
 -- :}
 -- {

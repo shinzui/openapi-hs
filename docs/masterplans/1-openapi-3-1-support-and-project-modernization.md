@@ -110,7 +110,7 @@ migration plan itself; see Decision Log). See the Decision Log for the full reco
 |---|-------|------|-----------|-----------|--------|
 | 1 | Modernize Build Toolchain to Cabal and GHC 9.12 | docs/plans/1-modernize-build-toolchain-to-cabal-and-ghc-9-12.md | None | None | Complete |
 | 2 | Rename Package to openapi-hs | docs/plans/2-rename-package-to-openapi-hs.md | None | EP-1 | Complete |
-| 3 | OpenAPI 3.1 Core Schema Type Changes | docs/plans/3-openapi-3-1-core-schema-type-changes.md | None | EP-1 | Not Started |
+| 3 | OpenAPI 3.1 Core Schema Type Changes | docs/plans/3-openapi-3-1-core-schema-type-changes.md | None | EP-1 | In Progress |
 | 4 | OpenAPI 3.1 JSON Schema Fields and Reference Keywords | docs/plans/4-openapi-3-1-json-schema-fields-and-reference-keywords.md | EP-3 | EP-1 | Not Started |
 | 5 | OpenAPI 3.1 Top-Level Object Features | docs/plans/5-openapi-3-1-top-level-object-features.md | EP-3 | EP-4 | Not Started |
 | 6 | OpenAPI 3.1 Schema Validation | docs/plans/6-openapi-3-1-schema-validation.md | EP-3, EP-4 | None | Not Started |
