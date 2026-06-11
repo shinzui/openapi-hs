@@ -20,3 +20,10 @@ cabal.sandbox.config
 .claude/
 .agents/
 CLAUDE.local.md
+.envrc
+dist-*
+.direnv
+cabal.project.local
+result
+result-*
+.pre-commit-config.yaml
