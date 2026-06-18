@@ -29,6 +29,7 @@
       ];
 
       shellHook = ''
+        ${config.pre-commit.installationScript}
       '';
 
       mkProjectShell = ghc: hsdev.mkDevShell {

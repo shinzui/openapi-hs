@@ -7,6 +7,11 @@
 
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
+
+    treefmt-nix.follows = "haskell-nix-dev/treefmt-nix";
+
+    pre-commit-hooks.url = "github:cachix/git-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   # The haskell-nix-dev base flake's binary cache, so the first `nix develop` downloads
@@ -28,6 +33,8 @@
       imports =
         [
           ./nix/haskell.nix
+          ./nix/treefmt.nix
+          ./nix/pre-commit.nix
         ]
         # Your project-specific customizations. seihou never generates, touches,
         # or migrates this file, so it is the conflict-free place to extend.
