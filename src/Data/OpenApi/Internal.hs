@@ -35,10 +35,10 @@ import           Data.HashMap.Strict.InsOrd.Compat (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 
 import Data.OpenApi.Aeson.Compat        (deleteKey)
-import Data.OpenApi.Internal.AesonUtils (AesonDefaultValue (..), HasSwaggerAesonOptions (..),
-                                         mkSwaggerAesonOptions, saoAdditionalPairs, saoSubObject,
-                                         sopSwaggerGenericParseJSON, sopSwaggerGenericToEncoding,
-                                         sopSwaggerGenericToJSON, sopSwaggerGenericToJSONWithOpts,
+import Data.OpenApi.Internal.AesonUtils (AesonDefaultValue (..), HasOpenApiAesonOptions (..),
+                                         mkOpenApiAesonOptions, saoAdditionalPairs, saoSubObject,
+                                         sopOpenApiGenericParseJSON, sopOpenApiGenericToEncoding,
+                                         sopOpenApiGenericToJSON, sopOpenApiGenericToJSONWithOpts,
                                          applyKeyRenamesToJSON, applyKeyRenamesParseJSON)
 import Data.OpenApi.Internal.Utils
 import Generics.SOP.TH                  (deriveGeneric)
@@ -291,7 +291,7 @@ data Operation = Operation
     _operationTags :: InsOrdHashSet TagName
 
     -- | A short summary of what the operation does.
-    -- For maximum readability in the swagger-ui, this field SHOULD be less than 120 characters.
+    -- For maximum readability in rendering tools, this field SHOULD be less than 120 characters.
   , _operationSummary :: Maybe Text
 
     -- | A verbose explanation of the operation behavior.
@@ -1169,9 +1169,9 @@ instance Monoid Operation where
 instance Semigroup (OAuth2Flow p) where
   l@OAuth2Flow{ _oAath2RefreshUrl = lUrl, _oAuth2Scopes = lScopes }
     <> OAuth2Flow { _oAath2RefreshUrl = rUrl, _oAuth2Scopes = rScopes } =
-      l { _oAath2RefreshUrl = swaggerMappend lUrl rUrl, _oAuth2Scopes = lScopes <> rScopes }
+      l { _oAath2RefreshUrl = openApiMappend lUrl rUrl, _oAuth2Scopes = lScopes <> rScopes }
 
--- swaggerMappend has First-like semantics, and here we need mappend'ing under Maybes.
+-- openApiMappend has First-like semantics, and here we need mappend'ing under Maybes.
 instance Semigroup OAuth2Flows where
   l <> r = OAuth2Flows
     { _oAuth2FlowsImplicit = _oAuth2FlowsImplicit l <> _oAuth2FlowsImplicit r
@@ -1187,7 +1187,7 @@ instance Monoid OAuth2Flows where
 instance Semigroup SecurityScheme where
   SecurityScheme (SecuritySchemeOAuth2 lFlows) lDesc
     <> SecurityScheme (SecuritySchemeOAuth2 rFlows) rDesc =
-      SecurityScheme (SecuritySchemeOAuth2 $ lFlows <> rFlows) (swaggerMappend lDesc rDesc)
+      SecurityScheme (SecuritySchemeOAuth2 $ lFlows <> rFlows) (openApiMappend lDesc rDesc)
   l <> _ = l
 
 instance Semigroup SecurityDefinitions where
@@ -1205,45 +1205,45 @@ instance Monoid RequestBody where
   mappend = (<>)
 
 -- =======================================================================
--- SwaggerMonoid helper instances
+-- OpenApiMonoid helper instances
 -- =======================================================================
 
-instance SwaggerMonoid Info
-instance SwaggerMonoid Components
-instance SwaggerMonoid PathItem
-instance SwaggerMonoid Schema
-instance SwaggerMonoid Param
-instance SwaggerMonoid Responses
-instance SwaggerMonoid Response
-instance SwaggerMonoid ExternalDocs
-instance SwaggerMonoid Operation
-instance (Eq a, Hashable a) => SwaggerMonoid (InsOrdHashSet a)
-instance SwaggerMonoid SecurityDefinitions
-instance SwaggerMonoid OpenApiSpecVersion
+instance OpenApiMonoid Info
+instance OpenApiMonoid Components
+instance OpenApiMonoid PathItem
+instance OpenApiMonoid Schema
+instance OpenApiMonoid Param
+instance OpenApiMonoid Responses
+instance OpenApiMonoid Response
+instance OpenApiMonoid ExternalDocs
+instance OpenApiMonoid Operation
+instance (Eq a, Hashable a) => OpenApiMonoid (InsOrdHashSet a)
+instance OpenApiMonoid SecurityDefinitions
+instance OpenApiMonoid OpenApiSpecVersion
 
-instance SwaggerMonoid MimeList
-deriving instance SwaggerMonoid URL
+instance OpenApiMonoid MimeList
+deriving instance OpenApiMonoid URL
 
-instance SwaggerMonoid OpenApiType where
-  swaggerMempty = OpenApiString
-  swaggerMappend _ y = y
+instance OpenApiMonoid OpenApiType where
+  openApiMempty = OpenApiString
+  openApiMappend _ y = y
 
-instance SwaggerMonoid OpenApiTypeValue where
-  swaggerMempty = OpenApiTypeSingle OpenApiString
-  swaggerMappend _ y = y
+instance OpenApiMonoid OpenApiTypeValue where
+  openApiMempty = OpenApiTypeSingle OpenApiString
+  openApiMappend _ y = y
 
-instance SwaggerMonoid ParamLocation where
-  swaggerMempty = ParamQuery
-  swaggerMappend _ y = y
+instance OpenApiMonoid ParamLocation where
+  openApiMempty = ParamQuery
+  openApiMappend _ y = y
 
-instance {-# OVERLAPPING #-} SwaggerMonoid (InsOrdHashMap FilePath PathItem) where
-  swaggerMempty = InsOrdHashMap.empty
-  swaggerMappend = InsOrdHashMap.unionWith mappend
+instance {-# OVERLAPPING #-} OpenApiMonoid (InsOrdHashMap FilePath PathItem) where
+  openApiMempty = InsOrdHashMap.empty
+  openApiMappend = InsOrdHashMap.unionWith mappend
 
-instance Monoid a => SwaggerMonoid (Referenced a) where
-  swaggerMempty = Inline mempty
-  swaggerMappend (Inline x) (Inline y) = Inline (mappend x y)
-  swaggerMappend _ y = y
+instance Monoid a => OpenApiMonoid (Referenced a) where
+  openApiMempty = Inline mempty
+  openApiMappend (Inline x) (Inline y) = Inline (mappend x y)
+  openApiMappend _ y = y
 
 -- =======================================================================
 -- Simple Generic-based ToJSON instances
@@ -1253,7 +1253,7 @@ instance ToJSON Style where
   toJSON = genericToJSON (jsonPrefix "Style")
 
 instance ToJSON OpenApiType where
-  toJSON = genericToJSON (jsonPrefix "Swagger")
+  toJSON = genericToJSON (jsonPrefix "OpenApi")
 
 instance ToJSON ParamLocation where
   toJSON = genericToJSON (jsonPrefix "Param")
@@ -1308,7 +1308,7 @@ instance FromJSON Style where
   parseJSON = genericParseJSON (jsonPrefix "Style")
 
 instance FromJSON OpenApiType where
-  parseJSON = genericParseJSON (jsonPrefix "Swagger")
+  parseJSON = genericParseJSON (jsonPrefix "OpenApi")
 
 instance ToJSON OpenApiTypeValue where
   toJSON (OpenApiTypeSingle t) = toJSON t   -- reuses ToJSON OpenApiType -> a JSON string
@@ -1376,15 +1376,15 @@ instance ToJSONKey MediaType where
   toJSONKey = JSON.toJSONKeyText (Text.pack . show)
 
 instance (Eq p, ToJSON p, AesonDefaultValue p) => ToJSON (OAuth2Flow p) where
-  toJSON a = sopSwaggerGenericToJSON a &
+  toJSON a = sopOpenApiGenericToJSON a &
     if InsOrdHashMap.null (_oAuth2Scopes a)
     then (<+> object ["scopes" .= object []])
     else id
-  toEncoding = sopSwaggerGenericToEncoding
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON OAuth2Flows where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON SecuritySchemeType where
   toJSON (SecuritySchemeHttp ty) = case ty of
@@ -1413,19 +1413,19 @@ instance ToJSON SecuritySchemeType where
     ]
 
 instance ToJSON OpenApi where
-  toJSON a = sopSwaggerGenericToJSON a &
+  toJSON a = sopOpenApiGenericToJSON a &
     if InsOrdHashMap.null (_openApiPaths a)
     then (<+> object ["paths" .= object []])
     else id
-  toEncoding = sopSwaggerGenericToEncoding
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON Server where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON SecurityScheme where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 -- | The canonical rename table mapping the plain keys produced by the generic
 -- field-name rule to their JSON Schema 2020-12 @$@-prefixed spellings. Owned by
@@ -1442,12 +1442,12 @@ schemaDollarKeyRenames =
 
 instance ToJSON Schema where
   toJSON = applyKeyRenamesToJSON schemaDollarKeyRenames
-         . sopSwaggerGenericToJSONWithOpts
-             (mkSwaggerAesonOptions "schema" & saoSubObject ?~ "items")
+         . sopOpenApiGenericToJSONWithOpts
+             (mkOpenApiAesonOptions "schema" & saoSubObject ?~ "items")
 
 instance ToJSON Header where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 -- | Both cases wrap the value in a single @"items"@ key. The @ToJSON Schema@
 -- instance uses @saoSubObject ?~ "items"@, which lifts that single key up into the
@@ -1458,56 +1458,56 @@ instance ToJSON OpenApiItems where
   toJSON (OpenApiItemsBoolean b) = object [ "items" .= b ]
 
 instance ToJSON Components where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON MimeList where
   toJSON (MimeList xs) = toJSON (map show xs)
 
 instance ToJSON Param where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON Responses where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON Response where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON Operation where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 -- | @PathItem@'s only @$@-prefixed key. Reuses EP-4's shared helper (IP-3).
 pathItemDollarKeyRenames :: [(Text, Text)]
 pathItemDollarKeyRenames = [ ("ref", "$ref") ]
 
 instance ToJSON PathItem where
-  toJSON = applyKeyRenamesToJSON pathItemDollarKeyRenames . sopSwaggerGenericToJSON
+  toJSON = applyKeyRenamesToJSON pathItemDollarKeyRenames . sopOpenApiGenericToJSON
   -- No hand-rolled toEncoding: it would bypass the $ref rename pass; let aeson
   -- derive toEncoding from toJSON so the rename always runs.
 
 instance ToJSON RequestBody where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON MediaTypeObject where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON Example where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON Encoding where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON Link where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopOpenApiGenericToJSON
+  toEncoding = sopOpenApiGenericToEncoding
 
 instance ToJSON SecurityDefinitions where
   toJSON (SecurityDefinitions sd) = toJSON sd
@@ -1568,10 +1568,10 @@ instance FromJSONKey MediaType where
   fromJSONKey = FromJSONKeyTextParser (parseJSON . String)
 
 instance (Eq p, FromJSON p, AesonDefaultValue p) => FromJSON (OAuth2Flow p) where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON OAuth2Flows where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON SecuritySchemeType where
   parseJSON js@(Object o) = do
@@ -1590,20 +1590,20 @@ instance FromJSON SecuritySchemeType where
   parseJSON _ = empty
 
 instance FromJSON OpenApi where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON Server where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON SecurityScheme where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON Schema where
   parseJSON = withObject "Schema" $ \o ->
-    sopSwaggerGenericParseJSON (Object (applyKeyRenamesParseJSON schemaDollarKeyRenames o))
+    sopOpenApiGenericParseJSON (Object (applyKeyRenamesParseJSON schemaDollarKeyRenames o))
 
 instance FromJSON Header where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON OpenApiItems where
   parseJSON (Bool b)      = pure (OpenApiItemsBoolean b)
@@ -1611,13 +1611,13 @@ instance FromJSON OpenApiItems where
   parseJSON _ = fail "items must be a schema object or a boolean"
 
 instance FromJSON Components where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON MimeList where
   parseJSON js = MimeList . map fromString <$> parseJSON js
 
 instance FromJSON Param where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON Responses where
   parseJSON (Object o) = Responses
@@ -1626,32 +1626,32 @@ instance FromJSON Responses where
   parseJSON _ = empty
 
 instance FromJSON Example where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON Response where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON Operation where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON PathItem where
   parseJSON = withObject "PathItem" $ \o ->
-    sopSwaggerGenericParseJSON (Object (applyKeyRenamesParseJSON pathItemDollarKeyRenames o))
+    sopOpenApiGenericParseJSON (Object (applyKeyRenamesParseJSON pathItemDollarKeyRenames o))
 
 instance FromJSON SecurityDefinitions where
   parseJSON js = SecurityDefinitions <$> parseJSON js
 
 instance FromJSON RequestBody where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON MediaTypeObject where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON Encoding where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON Link where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = sopOpenApiGenericParseJSON
 
 instance FromJSON Reference where
   parseJSON (Object o) = Reference <$> o .: "$ref"
@@ -1700,45 +1700,45 @@ instance FromJSON ExpressionOrValue where
 instance FromJSON Callback where
   parseJSON = fmap Callback . parseJSON
 
-instance HasSwaggerAesonOptions Server where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "server"
-instance HasSwaggerAesonOptions Components where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "components"
-instance HasSwaggerAesonOptions Header where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "header"
-instance AesonDefaultValue p => HasSwaggerAesonOptions (OAuth2Flow p) where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "oauth2" & saoSubObject ?~ "params"
-instance HasSwaggerAesonOptions OAuth2Flows where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "oauth2Flows"
-instance HasSwaggerAesonOptions Operation where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "operation"
-instance HasSwaggerAesonOptions Param where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "param"
-instance HasSwaggerAesonOptions PathItem where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "pathItem"
-instance HasSwaggerAesonOptions Response where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "response"
-instance HasSwaggerAesonOptions RequestBody where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "requestBody"
-instance HasSwaggerAesonOptions MediaTypeObject where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "mediaTypeObject"
-instance HasSwaggerAesonOptions Responses where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "responses" & saoSubObject ?~ "responses"
-instance HasSwaggerAesonOptions SecurityScheme where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "securityScheme" & saoSubObject ?~ "type"
-instance HasSwaggerAesonOptions Schema where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "schema" & saoSubObject ?~ "paramSchema"
-instance HasSwaggerAesonOptions OpenApiSpecVersion where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "openapi"
-instance HasSwaggerAesonOptions OpenApi where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger"
-instance HasSwaggerAesonOptions Example where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "example"
-instance HasSwaggerAesonOptions Encoding where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "encoding"
+instance HasOpenApiAesonOptions Server where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "server"
+instance HasOpenApiAesonOptions Components where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "components"
+instance HasOpenApiAesonOptions Header where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "header"
+instance AesonDefaultValue p => HasOpenApiAesonOptions (OAuth2Flow p) where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "oauth2" & saoSubObject ?~ "params"
+instance HasOpenApiAesonOptions OAuth2Flows where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "oauth2Flows"
+instance HasOpenApiAesonOptions Operation where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "operation"
+instance HasOpenApiAesonOptions Param where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "param"
+instance HasOpenApiAesonOptions PathItem where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "pathItem"
+instance HasOpenApiAesonOptions Response where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "response"
+instance HasOpenApiAesonOptions RequestBody where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "requestBody"
+instance HasOpenApiAesonOptions MediaTypeObject where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "mediaTypeObject"
+instance HasOpenApiAesonOptions Responses where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "responses" & saoSubObject ?~ "responses"
+instance HasOpenApiAesonOptions SecurityScheme where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "securityScheme" & saoSubObject ?~ "type"
+instance HasOpenApiAesonOptions Schema where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "schema" & saoSubObject ?~ "paramSchema"
+instance HasOpenApiAesonOptions OpenApiSpecVersion where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "openapi"
+instance HasOpenApiAesonOptions OpenApi where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "openApi"
+instance HasOpenApiAesonOptions Example where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "example"
+instance HasOpenApiAesonOptions Encoding where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "encoding"
 
-instance HasSwaggerAesonOptions Link where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "link"
+instance HasOpenApiAesonOptions Link where
+  openApiAesonOptions _ = mkOpenApiAesonOptions "link"
 
 instance AesonDefaultValue Version where
   defaultValue = Just (makeVersion [3,1,0])

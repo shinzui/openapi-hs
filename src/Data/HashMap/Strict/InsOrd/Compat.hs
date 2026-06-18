@@ -12,10 +12,10 @@
 -- <https://github.com/erikd/insert-ordered-containers/pull/8>.
 --
 -- That change fixed 'Eq' and Aeson instances in the upstream package, but it is
--- a behavioral break for @swagger2@ where we need stable Swagger Schema
+-- a behavioral break for openapi-hs, which needs stable OpenAPI Schema
 -- generation and JSON object-like encoding.
 --
--- This module keeps the old @swagger2@ expectations:
+-- This module keeps the original encoding expectations:
 --
 -- * 'InsOrdHashMap' values are encoded as JSON objects (not arrays of key/value
 --   tuples), so field names remain first-class object keys.
@@ -52,7 +52,7 @@
 -- >>> encode (decodeIOHM "{\"b\":1,\"a\":2}")
 -- "{\"a\":2,\"b\":1}"
 --
--- This object encoding is what @swagger2@ wants for generated Swagger
+-- This object encoding is what openapi-hs wants for generated schema
 -- definitions/properties because it keeps emitted schemas easy to consume and
 -- stable in practice.
 --
@@ -60,7 +60,7 @@
 -- order due to @aeson@ limitations. In particular, object parsing goes through
 -- structures that do not preserve all ordering guarantees end-to-end. We accept
 -- this trade-off for now because the primary requirement is deterministic
--- /encoding/ for generated Swagger Schema artifacts.
+-- /encoding/ for generated OpenAPI Schema artifacts.
 --
 -- Many tests rely on @aesonQQ@-style JSON equality, where semantic object
 -- equality matters more than insertion order. Comparing via plain hash maps

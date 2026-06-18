@@ -33,12 +33,12 @@ type family GenericHasSimpleShape t (f :: Symbol) (s :: TypeShape) :: Constraint
   GenericHasSimpleShape t f SumOfProducts = ()
   GenericHasSimpleShape t f Mixed =
     TypeError
-      (     Text "Cannot derive Generic-based Swagger Schema for " :<>: ShowType t
+      (     Text "Cannot derive Generic-based OpenAPI Schema for " :<>: ShowType t
       :$$:  ShowType t :<>: Text " is a mixed sum type (has both unit and non-unit constructors)."
-      :$$:  Text "Swagger does not have a good representation for these types."
+      :$$:  Text "OpenAPI does not have a good representation for these types."
       :$$:  Text "Use " :<>: Text f :<>: Text " if you want to derive schema"
       :$$:  Text "that matches aeson's Generic-based toJSON,"
-      :$$:  Text "but that's not supported by some Swagger tools."
+      :$$:  Text "but that's not supported by some OpenAPI tools."
       )
 
 -- | Infer a 'TypeShape' for a generic representation of a type.

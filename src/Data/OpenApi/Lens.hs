@@ -24,17 +24,17 @@ makeFields ''MediaTypeObject
 makeFields ''Info
 makeFields ''Contact
 makeFields ''License
-makeLensesWith swaggerFieldRules ''PathItem
+makeLensesWith openApiFieldRules ''PathItem
 makeFields ''Tag
 makeFields ''Operation
-makeLensesWith swaggerFieldRules ''Param
+makeLensesWith openApiFieldRules ''Param
 makeFields ''Header
-makeLensesWith swaggerFieldRules ''Schema
+makeLensesWith openApiFieldRules ''Schema
 makeFields ''NamedSchema
 makeFields ''Xml
-makeLensesWith swaggerFieldRules ''Responses
+makeLensesWith openApiFieldRules ''Responses
 makeFields ''Response
-makeLensesWith swaggerFieldRules ''SecurityScheme
+makeLensesWith openApiFieldRules ''SecurityScheme
 makeFields ''ApiKeyParams
 makeFields ''OAuth2ImplicitFlow
 makeFields ''OAuth2PasswordFlow

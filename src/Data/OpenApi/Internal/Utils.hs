@@ -22,10 +22,10 @@ import Data.Text (Text)
 import GHC.Generics
 import Language.Haskell.TH (mkName)
 
-swaggerFieldRules :: LensRules
-swaggerFieldRules = defaultFieldRules & lensField %~ swaggerFieldNamer
+openApiFieldRules :: LensRules
+openApiFieldRules = defaultFieldRules & lensField %~ openApiFieldNamer
   where
-    swaggerFieldNamer namer dname fnames fname =
+    openApiFieldNamer namer dname fnames fname =
       map fixDefName (namer dname fnames fname)
 
     fixDefName (MethodName cname mname) = MethodName cname (fixName mname)
@@ -97,43 +97,43 @@ instance (GMonoid f, GMonoid g) => GMonoid (f :*: g) where
   gmempty = gmempty :*: gmempty
   gmappend (a :*: x) (b :*: y) = gmappend a b :*: gmappend x y
 
-instance SwaggerMonoid a => GMonoid (K1 i a) where
-  gmempty = K1 swaggerMempty
-  gmappend (K1 x) (K1 y) = K1 (swaggerMappend x y)
+instance OpenApiMonoid a => GMonoid (K1 i a) where
+  gmempty = K1 openApiMempty
+  gmappend (K1 x) (K1 y) = K1 (openApiMappend x y)
 
 instance GMonoid f => GMonoid (M1 i t f) where
   gmempty = M1 gmempty
   gmappend (M1 x) (M1 y) = M1 (gmappend x y)
 
-class SwaggerMonoid m where
-  swaggerMempty :: m
-  swaggerMappend :: m -> m -> m
-  default swaggerMempty :: Monoid m => m
-  swaggerMempty = mempty
-  default swaggerMappend :: Monoid m => m -> m -> m
-  swaggerMappend = mappend
+class OpenApiMonoid m where
+  openApiMempty :: m
+  openApiMappend :: m -> m -> m
+  default openApiMempty :: Monoid m => m
+  openApiMempty = mempty
+  default openApiMappend :: Monoid m => m -> m -> m
+  openApiMappend = mappend
 
-instance SwaggerMonoid [a]
-instance Ord a => SwaggerMonoid (Set a)
-instance Ord k => SwaggerMonoid (Map k v)
+instance OpenApiMonoid [a]
+instance Ord a => OpenApiMonoid (Set a)
+instance Ord k => OpenApiMonoid (Map k v)
 
-instance (Eq k, Hashable k) => SwaggerMonoid (HashMap k v) where
-  swaggerMempty = mempty
-  swaggerMappend = HashMap.unionWith (\_old new -> new)
+instance (Eq k, Hashable k) => OpenApiMonoid (HashMap k v) where
+  openApiMempty = mempty
+  openApiMappend = HashMap.unionWith (\_old new -> new)
 
-instance (Eq k, Hashable k) => SwaggerMonoid (InsOrdHashMap k v) where
-  swaggerMempty = mempty
-  swaggerMappend = InsOrdHashMap.unionWith (\_old new -> new)
+instance (Eq k, Hashable k) => OpenApiMonoid (InsOrdHashMap k v) where
+  openApiMempty = mempty
+  openApiMappend = InsOrdHashMap.unionWith (\_old new -> new)
 
-instance SwaggerMonoid Text where
-  swaggerMempty = mempty
-  swaggerMappend x "" = x
-  swaggerMappend _ y = y
+instance OpenApiMonoid Text where
+  openApiMempty = mempty
+  openApiMappend x "" = x
+  openApiMappend _ y = y
 
-instance SwaggerMonoid (Maybe a) where
-  swaggerMempty = Nothing
-  swaggerMappend x Nothing = x
-  swaggerMappend _ y = y
+instance OpenApiMonoid (Maybe a) where
+  openApiMempty = Nothing
+  openApiMappend x Nothing = x
+  openApiMappend _ y = y
 
 encodePretty :: ToJSON a => a -> BSL.ByteString
 encodePretty = P.encodePretty' $ P.defConfig { P.confCompare = P.compare }

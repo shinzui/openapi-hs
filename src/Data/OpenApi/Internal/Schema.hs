@@ -58,7 +58,7 @@ import           Data.OpenApi.Internal
 import           Data.OpenApi.Internal.ParamSchema (ToParamSchema (..))
 import           Data.OpenApi.Internal.TypeShape
 import           Data.OpenApi.Lens                 hiding (name, schema)
-import qualified Data.OpenApi.Lens                 as Swagger
+import qualified Data.OpenApi.Lens                 as OpenApiLens
 import           Data.OpenApi.SchemaOptions
 
 import qualified Data.ByteString as BS
@@ -601,7 +601,7 @@ instance ToSchema Word64  where declareNamedSchema = plain . paramSchemaToSchema
 
 instance ToSchema Char where
   declareNamedSchema proxy = plain (paramSchemaToSchema proxy)
-    & mapped.Swagger.schema.example ?~ toJSON '?'
+    & mapped.OpenApiLens.schema.example ?~ toJSON '?'
 
 instance ToSchema Scientific  where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Double      where declareNamedSchema = plain . paramSchemaToSchema
@@ -1057,7 +1057,7 @@ gsumConToSchemaWith :: forall c f. (GToSchema (C1 c f), Constructor c) =>
 gsumConToSchemaWith ref opts _ = (tag, withTitle)
   where
     -- Give sub-schemas @title@ attribute with constructor name, if none present.
-    -- This will look prettier in swagger-ui.
+    -- This will look prettier in rendering tools.
     withTitle = case schema of
       Inline sub -> Inline $ sub
         & title %~ (<|> Just (T.pack constructorName))
