@@ -1,10 +1,10 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
 -- Module:      Data.OpenApi.Lens
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
--- Lenses and prisms for Swagger.
+-- Lenses and prisms for OpenAPI.
 module Data.OpenApi.Lens where
 
 import Control.Lens

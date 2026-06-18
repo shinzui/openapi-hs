@@ -4,7 +4,7 @@
 {-# LANGUAGE CPP #-}
 -- |
 -- Module:      Data.HashMap.Strict.InsOrd.Compat
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
 -- Compatibility wrapper around @insert-ordered-containers@ to mitigate the

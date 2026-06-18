@@ -3,7 +3,7 @@ name:                openapi-hs
 version:             4.0.0
 
 synopsis:            OpenAPI 3.1 data model
-category:            Web, Swagger, OpenApi
+category:            Web, OpenApi
 description:
   openapi-hs (a fork of the openapi3 library) is intended to be used for decoding and
   encoding OpenAPI 3.1 API specifications as well as manipulating them. The Haskell
@@ -16,9 +16,9 @@ homepage:            https://github.com/shinzui/openapi-hs
 bug-reports:         https://github.com/shinzui/openapi-hs/issues
 license:             BSD-3-Clause
 license-file:        LICENSE
-author:              Nickolay Kudasov, Maxim Koltsov
-maintainer:          nickolay@getshoptv.com, kolmax94@gmail.com
-copyright:           (c) 2015-2016, GetShopTV, (c) 2020, Biocad
+author:              Nickolay Kudasov, Maxim Koltsov, Nadeem Bitar
+maintainer:          nadeem@gmail.com
+copyright:           (c) 2015-2016, GetShopTV, (c) 2020, Biocad, (c) 2026, Nadeem Bitar
 build-type:          Simple
 extra-source-files:
     examples/*.hs

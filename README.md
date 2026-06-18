@@ -35,9 +35,6 @@ describes HTTP APIs in JSON or YAML. OpenAPI 3.1 adopts the
 - **`lens` and `optics`** accessors for ergonomic reads and updates.
 - **3.0 → 3.1 migration helpers** for documents you don't control yet.
 
-This package builds on the excellent
-[swagger2](https://github.com/GetShopTV/swagger2) work it was originally derived from.
-
 ## Installation
 
 Add `openapi-hs` to your project's dependencies (Cabal):
@@ -163,8 +160,7 @@ worked examples, and pitfalls.
 ## Examples
 
 Runnable examples live in the [`examples/`](/examples) directory. Generated specifications can be
-explored interactively in the [Swagger Editor](https://editor.swagger.io/) and served via
-[Swagger UI](https://github.com/swagger-api/swagger-ui).
+explored interactively in any OpenAPI 3.1 viewer or editor.
 
 ## Building and developing
 
@@ -186,7 +182,7 @@ Full API documentation is on
 worked examples.
 
 The design and implementation strategy behind the 3.1 work is documented in
-**[`docs/OPENAPI31_MIGRATION_PLAN.md`](/docs/OPENAPI31_MIGRATION_PLAN.md)**.
+**[`docs/OPENAPI31_MIGRATION_PLAN.md`](https://github.com/shinzui/openapi-hs/blob/master/docs/OPENAPI31_MIGRATION_PLAN.md)**.
 
 ## Contributing
 

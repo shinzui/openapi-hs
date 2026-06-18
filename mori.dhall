@@ -11,7 +11,7 @@ in  Schema.Project::{
       , lifecycle = Schema.Lifecycle.Active
       , description = Some
           "OpenAPI 3.1 data model for Haskell (fork of openapi3); decode, encode, and manipulate OpenAPI specs under the Data.OpenApi.* namespace"
-      , domains = [ "openapi", "web", "swagger" ]
+      , domains = [ "openapi", "web", "json-schema" ]
       , owners = [ "shinzui" ]
       }
     , repos =

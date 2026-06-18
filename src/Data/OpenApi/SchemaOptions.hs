@@ -1,6 +1,6 @@
 -- |
 -- Module:      Data.OpenApi.SchemaOptions
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
 -- Generic deriving options for @'ToParamSchema'@ and @'ToSchema'@.
@@ -8,7 +8,7 @@ module Data.OpenApi.SchemaOptions where
 
 import qualified Data.Aeson.Types as Aeson
 
--- | Options that specify how to encode your type to Swagger schema.
+-- | Options that specify how to encode your type to OpenAPI schema.
 data SchemaOptions = SchemaOptions
   { -- | Function applied to field labels. Handy for removing common record prefixes for example.
     fieldLabelModifier :: String -> String

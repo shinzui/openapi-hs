@@ -1,9 +1,9 @@
 -- |
 -- Module:      Data.OpenApi.ParamSchema
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
--- Types and functions for working with Swagger parameter schema.
+-- Types and functions for working with OpenAPI parameter schema.
 module Data.OpenApi.ParamSchema (
   -- * Encoding
   ToParamSchema(..),

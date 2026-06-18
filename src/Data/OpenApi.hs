@@ -1,6 +1,6 @@
 -- |
 -- Module:      Data.OpenApi
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
 -- OpenAPI 3.1 data model.
@@ -40,7 +40,7 @@ module Data.OpenApi (
   module Data.OpenApi.Schema,
   module Data.OpenApi.Schema.Validation,
 
-  -- * Swagger specification
+  -- * OpenAPI specification
   OpenApi(..),
   OpenApiMajorVersion(..),
   detectVersion,
@@ -156,11 +156,11 @@ import Data.OpenApi.Internal
 
 -- $howto
 --
--- This section explains how to use this library to work with Swagger specification.
+-- This section explains how to use this library to work with the OpenAPI specification.
 
 -- $monoids
 --
--- Virtually all types representing Swagger specification have @'Monoid'@ instances.
+-- Virtually all types representing the OpenAPI specification have @'Monoid'@ instances.
 -- The @'Monoid'@ type class provides two methods — @'mempty'@ and @'mappend'@.
 --
 -- In this library you can use @'mempty'@ for a default/empty value. For instance:
@@ -216,7 +216,7 @@ import Data.OpenApi.Internal
 --
 -- Note: if you're working with the <https://hackage.haskell.org/package/optics optics> library, take a look at "Data.OpenApi.Optics".
 --
--- Since @'Swagger'@ has a fairly complex structure, lenses and prisms are used
+-- Since @'OpenApi'@ has a fairly complex structure, lenses and prisms are used
 -- to work comfortably with it. In combination with @'Monoid'@ instances, lenses
 -- make it fairly simple to construct/modify any part of the specification:
 --
@@ -266,12 +266,12 @@ import Data.OpenApi.Internal
 --
 -- In the snippet above we declare an API with a single path @/user@. This path provides method @GET@
 -- which produces @application/json@ output. It should respond with code @200@ and body specified
--- by schema @User@ which is defined in @'definitions'@ property of swagger specification.
+-- by schema @User@ which is defined in the @'components'@ property of the OpenAPI specification.
 -- Alternatively it may respond with code @404@ meaning that user info is not found.
 --
--- For convenience, @swagger2@ uses /classy field lenses/. It means that
+-- For convenience, @openapi-hs@ uses /classy field lenses/. It means that
 -- field accessor names can be overloaded for different types. One such
--- common field is @'description'@. Many components of a Swagger specification
+-- common field is @'description'@. Many components of an OpenAPI specification
 -- can have descriptions, and you can use the same name for them:
 --
 -- >>> BSL.putStrLn $ encodePretty $ (mempty :: Response) & description .~ "No content"
@@ -324,8 +324,8 @@ import Data.OpenApi.Internal
 --
 -- In most cases you will have a Haskell data type for which you would like to
 -- define a corresponding schema. To facilitate this use case
--- @swagger2@ provides two classes for schema encoding.
--- Both these classes provide means to encode /types/ as Swagger /schemas/.
+-- @openapi-hs@ provides two classes for schema encoding.
+-- Both these classes provide means to encode /types/ as OpenAPI /schemas/.
 --
 -- @'ToParamSchema'@ is intended to be used for primitive API endpoint parameters,
 -- such as query parameters, headers and URL path pieces.
@@ -341,7 +341,7 @@ import Data.OpenApi.Internal
 -- @'ToSchema'@ default implementation is also aligned with @'ToJSON'@ default implementation with
 -- the only difference being for sum encoding. @'ToJSON'@ defaults sum encoding to @'defaultTaggedObject'@,
 -- while @'ToSchema'@ defaults to something which corresponds to @'ObjectWithSingleField'@. This is due to
--- @'defaultTaggedObject'@ behavior being hard to specify in Swagger.
+-- @'defaultTaggedObject'@ behavior being hard to specify in OpenAPI.
 --
 -- Here's an example showing @'ToJSON'@–@'ToSchema'@ correspondance:
 --
@@ -370,7 +370,7 @@ import Data.OpenApi.Internal
 --     "type": "object"
 -- }
 --
--- This package implements OpenAPI 3.0 spec, which supports @oneOf@ in schemas, allowing any sum types
+-- This package implements the OpenAPI 3.1 spec, which supports @oneOf@ in schemas, allowing any sum types
 -- to be faithfully represented. All sum encodings supported by @aeson@ are supported here as well, with
 -- an exception of 'Data.Aeson.TwoElemArray', since OpenAPI spec does not support heterogeneous arrays.
 --
@@ -426,8 +426,8 @@ import Data.OpenApi.Internal
 -- }
 
 -- $manipulation
--- Sometimes you have to work with an imported or generated @'Swagger'@.
--- For instance, <servant-swagger http://hackage.haskell.org/package/servant-swagger> generates basic @'Swagger'@
+-- Sometimes you have to work with an imported or generated @'OpenApi'@.
+-- For instance, <https://hackage.haskell.org/package/servant-openapi3 servant-openapi3> generates a basic @'OpenApi'@
 -- for a type-level servant API.
 --
 -- Lenses and prisms can be used to manipulate such specification to add additional information, tags, extra responses, etc.

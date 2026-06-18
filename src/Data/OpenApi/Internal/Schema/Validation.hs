@@ -4,7 +4,7 @@
 -- Module:      Data.OpenApi.Internal.Schema.Validation
 -- Copyright:   (c) 2015 GetShopTV
 -- License:     BSD3
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
 -- Validate JSON values with Swagger Schema.

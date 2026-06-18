@@ -1,9 +1,9 @@
 -- |
 -- Module:      Data.OpenApi.Schema
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
--- Types and functions for working with Swagger schema.
+-- Types and functions for working with OpenAPI schema.
 module Data.OpenApi.Schema (
   -- * Encoding
   ToSchema(..),

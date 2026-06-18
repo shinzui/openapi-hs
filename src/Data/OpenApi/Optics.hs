@@ -61,7 +61,7 @@
 --
 -- For convenience optics are defined as /labels/. It means that field accessor
 -- names can be overloaded for different types. One such common field is
--- @#description@. Many components of a Swagger specification can have
+-- @#description@. Many components of an OpenAPI specification can have
 -- descriptions, and you can use the same name for them:
 --
 -- >>> BSL.putStrLn $ encodePretty $ (mempty :: Response) & #description .~ "No content"

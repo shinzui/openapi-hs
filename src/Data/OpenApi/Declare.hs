@@ -1,6 +1,6 @@
 -- |
 -- Module:      Data.OpenApi.Declare
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
 -- Declare monad transformer and associated functions.

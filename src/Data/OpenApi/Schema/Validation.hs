@@ -1,9 +1,9 @@
 -- |
 -- Module:      Data.OpenApi.Schema.Validation
--- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
--- Validate JSON values with Swagger Schema.
+-- Validate JSON values with OpenAPI Schema.
 module Data.OpenApi.Schema.Validation (
   -- * How to use validation
   -- $howto
@@ -44,7 +44,7 @@ import Data.OpenApi.Internal.Schema.Validation
 -- This module provides helpful functions for JSON validation.
 -- These functions are meant to be used in test suites for your application
 -- to ensure that JSON respresentation for your data corresponds to
--- schemas you're using for the Swagger specification.
+-- schemas you're using for the OpenAPI specification.
 --
 -- It is recommended to use validation functions as QuickCheck properties
 -- (see <http://hackage.haskell.org/package/QuickCheck>).
