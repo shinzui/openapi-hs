@@ -3,6 +3,7 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- For TypeErrors
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
+
 -- |
 -- Module:      Data.OpenApi.Internal.Schema
 -- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
@@ -12,65 +13,66 @@
 -- guarantees — import "Data.OpenApi.Schema" instead.
 module Data.OpenApi.Internal.Schema where
 
-import Prelude ()
-import Prelude.Compat
-
-import Data.Kind (Type)
-
-import Control.Lens hiding (allOf, anyOf)
-import Data.Data.Lens (template)
-
 import Control.Applicative ((<|>))
+import Control.Lens hiding (allOf, anyOf)
 import Control.Monad
 import Control.Monad.Writer hiding (First, Last)
-import Data.Aeson (Object (..), SumEncoding (..), ToJSON (..), ToJSONKey (..),
-                   ToJSONKeyFunction (..), Value (..))
+import Data.Aeson
+  ( Object (..),
+    SumEncoding (..),
+    ToJSON (..),
+    ToJSONKey (..),
+    ToJSONKeyFunction (..),
+    Value (..),
+  )
+import Data.ByteString qualified as BS
+import Data.ByteString.Lazy.Char8 qualified as BSL
 import Data.Char
 import Data.Data (Data)
+import Data.Data.Lens (template)
+import Data.Fixed (Fixed, HasResolution, Pico)
 import Data.Foldable (traverse_)
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
-import           "unordered-containers" Data.HashSet (HashSet)
-import qualified "unordered-containers" Data.HashSet as HashSet
-import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
+import Data.HashMap.Strict qualified as HashMap
+import Data.HashMap.Strict.InsOrd.Compat qualified as InsOrdHashMap
 import Data.Int
-import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
+import Data.IntSet (IntSet)
+import Data.Kind (Type)
 import Data.List (sort)
 import Data.List.NonEmpty.Compat (NonEmpty)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
+import Data.OpenApi.Aeson.Compat (keyToText, objectKeys, toInsOrdHashMap)
+import Data.OpenApi.Declare
+import Data.OpenApi.Internal
+import Data.OpenApi.Internal.ParamSchema (ToParamSchema (..))
+import Data.OpenApi.Internal.TypeShape
+import Data.OpenApi.Lens hiding (name, schema)
+import Data.OpenApi.Lens qualified as OpenApiLens
+import Data.OpenApi.SchemaOptions
 import Data.Proxy
 import Data.Scientific (Scientific)
-import Data.Fixed (Fixed, HasResolution, Pico)
-import Data.Set (Set)
 import Data.Semigroup
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
+import Data.Set (Set)
+import Data.Text qualified as T
+import Data.Text.Lazy qualified as TL
 import Data.Time
-import qualified Data.Vector as V
-import qualified Data.Vector.Primitive as VP
-import qualified Data.Vector.Storable as VS
-import qualified Data.Vector.Unboxed as VU
+import Data.UUID.Types qualified as UUID
+import Data.Vector qualified as V
+import Data.Vector.Primitive qualified as VP
+import Data.Vector.Storable qualified as VS
+import Data.Vector.Unboxed qualified as VU
 import Data.Version (Version)
-import Numeric.Natural.Compat (Natural)
 import Data.Word
 import GHC.Generics
-import qualified Data.UUID.Types as UUID
+import GHC.TypeLits (ErrorMessage (..), TypeError)
+import Numeric.Natural.Compat (Natural)
+import Prelude.Compat
 import Type.Reflection (Typeable, typeRep)
-
-import           Data.OpenApi.Aeson.Compat         (keyToText, objectKeys, toInsOrdHashMap)
-import           Data.OpenApi.Declare
-import           Data.OpenApi.Internal
-import           Data.OpenApi.Internal.ParamSchema (ToParamSchema (..))
-import           Data.OpenApi.Internal.TypeShape
-import           Data.OpenApi.Lens                 hiding (name, schema)
-import qualified Data.OpenApi.Lens                 as OpenApiLens
-import           Data.OpenApi.SchemaOptions
-
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy.Char8 as BSL
-import GHC.TypeLits (TypeError, ErrorMessage(..))
+import "unordered-containers" Data.HashSet (HashSet)
+import "unordered-containers" Data.HashSet qualified as HashSet
+import Prelude ()
 
 unnamed :: Schema -> NamedSchema
 unnamed schema = NamedSchema Nothing schema
@@ -138,22 +140,24 @@ rename name (NamedSchema _ schema) = NamedSchema name schema
 --
 -- instance ToSchema Coord
 -- @
-class Typeable a => ToSchema a where
+class (Typeable a) => ToSchema a where
   -- | Convert a type into an optionally named schema
   -- together with all used definitions.
   -- Note that the schema itself is included in definitions
   -- only if it is recursive (and thus needs its definition in scope).
   declareNamedSchema :: Proxy a -> Declare (Definitions Schema) NamedSchema
-  default declareNamedSchema :: (Generic a, GToSchema (Rep a)) =>
+  default declareNamedSchema ::
+    (Generic a, GToSchema (Rep a)) =>
     Proxy a -> Declare (Definitions Schema) NamedSchema
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
 instance ToSchema TimeOfDay where
-  declareNamedSchema _ = pure $ named "TimeOfDay" $ timeSchema "hh:MM:ss"
-    & example ?~ toJSON (TimeOfDay 12 33 15)
+  declareNamedSchema _ =
+    pure $ named "TimeOfDay" $ timeSchema "hh:MM:ss"
+      & example ?~ toJSON (TimeOfDay 12 33 15)
 
 -- | Convert a type into a schema and declare all used schema definitions.
-declareSchema :: ToSchema a => Proxy a -> Declare (Definitions Schema) Schema
+declareSchema :: (ToSchema a) => Proxy a -> Declare (Definitions Schema) Schema
 declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 
 -- | Convert a type into an optionally named schema.
@@ -173,7 +177,7 @@ declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 --     "format": "date",
 --     "type": "string"
 -- }
-toNamedSchema :: ToSchema a => Proxy a -> NamedSchema
+toNamedSchema :: (ToSchema a) => Proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
 -- | Get type's schema name according to its @'ToSchema'@ instance.
@@ -183,7 +187,7 @@ toNamedSchema = undeclare . declareNamedSchema
 --
 -- >>> schemaName (Proxy :: Proxy UTCTime)
 -- Just "UTCTime"
-schemaName :: ToSchema a => Proxy a -> Maybe T.Text
+schemaName :: (ToSchema a) => Proxy a -> Maybe T.Text
 schemaName = _namedSchemaName . toNamedSchema
 
 -- | Convert a type into a schema.
@@ -202,7 +206,7 @@ schemaName = _namedSchemaName . toNamedSchema
 --     },
 --     "type": "array"
 -- }
-toSchema :: ToSchema a => Proxy a -> Schema
+toSchema :: (ToSchema a) => Proxy a -> Schema
 toSchema = _namedSchemaSchema . toNamedSchema
 
 -- | Convert a type into a referenced schema if possible.
@@ -217,7 +221,7 @@ toSchema = _namedSchemaSchema . toNamedSchema
 -- {
 --     "$ref": "#/components/schemas/Day"
 -- }
-toSchemaRef :: ToSchema a => Proxy a -> Referenced Schema
+toSchemaRef :: (ToSchema a) => Proxy a -> Referenced Schema
 toSchemaRef = undeclare . declareSchemaRef
 
 -- | Convert a type into a referenced schema if possible
@@ -227,7 +231,7 @@ toSchemaRef = undeclare . declareSchemaRef
 -- Schema definitions are typically declared for every referenced schema.
 -- If @'declareSchemaRef'@ returns a reference, a corresponding schema
 -- will be declared (regardless of whether it is recusive or not).
-declareSchemaRef :: ToSchema a => Proxy a -> Declare (Definitions Schema) (Referenced Schema)
+declareSchemaRef :: (ToSchema a) => Proxy a -> Declare (Definitions Schema) (Referenced Schema)
 declareSchemaRef proxy = do
   case toNamedSchema proxy of
     NamedSchema (Just name) schema -> do
@@ -253,7 +257,7 @@ declareSchemaRef proxy = do
 --
 -- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
 -- when inlining recursive schemas.
-inlineSchemasWhen :: Data s => (T.Text -> Bool) -> (Definitions Schema) -> s -> s
+inlineSchemasWhen :: (Data s) => (T.Text -> Bool) -> (Definitions Schema) -> s -> s
 inlineSchemasWhen p defs = template %~ deref
   where
     deref r@(Ref (Reference name))
@@ -271,7 +275,7 @@ inlineSchemasWhen p defs = template %~ deref
 --
 -- __WARNING:__ @'inlineSchemas'@ will produce infinite schemas
 -- when inlining recursive schemas.
-inlineSchemas :: Data s => [T.Text] -> (Definitions Schema) -> s -> s
+inlineSchemas :: (Data s) => [T.Text] -> (Definitions Schema) -> s -> s
 inlineSchemas names = inlineSchemasWhen (`elem` names)
 
 -- | Inline all schema references for which the definition
@@ -279,7 +283,7 @@ inlineSchemas names = inlineSchemasWhen (`elem` names)
 --
 -- __WARNING:__ @'inlineAllSchemas'@ will produce infinite schemas
 -- when inlining recursive schemas.
-inlineAllSchemas :: Data s => (Definitions Schema) -> s -> s
+inlineAllSchemas :: (Data s) => (Definitions Schema) -> s -> s
 inlineAllSchemas = inlineSchemasWhen (const True)
 
 -- | Convert a type into a schema without references.
@@ -296,20 +300,20 @@ inlineAllSchemas = inlineSchemasWhen (const True)
 --
 -- __WARNING:__ @'toInlinedSchema'@ will produce infinite schema
 -- when inlining recursive schemas.
-toInlinedSchema :: ToSchema a => Proxy a -> Schema
+toInlinedSchema :: (ToSchema a) => Proxy a -> Schema
 toInlinedSchema proxy = inlineAllSchemas defs schema
   where
     (defs, schema) = runDeclare (declareSchema proxy) mempty
 
 -- | Inline all /non-recursive/ schemas for which the definition
 -- can be found in @'Definitions'@.
-inlineNonRecursiveSchemas :: Data s => (Definitions Schema) -> s -> s
+inlineNonRecursiveSchemas :: (Data s) => (Definitions Schema) -> s -> s
 inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
   where
     nonRecursive name =
       case InsOrdHashMap.lookup name defs of
         Just schema -> name `notElem` execDeclare (usedNames schema) mempty
-        Nothing     -> False
+        Nothing -> False
 
     usedNames schema = traverse_ schemaRefNames (schema ^.. template)
 
@@ -383,34 +387,36 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
 --     ],
 --     "type": "object"
 -- }
-sketchSchema :: ToJSON a => a -> Schema
+sketchSchema :: (ToJSON a) => a -> Schema
 sketchSchema = sketch . toJSON
   where
     sketch Null = go Null
     sketch js@(Bool _) = go js
     sketch js = go js & example ?~ js
 
-    go Null       = mempty & type_ ?~ OpenApiTypeSingle OpenApiNull
-    go (Bool _)   = mempty & type_ ?~ OpenApiTypeSingle OpenApiBoolean
+    go Null = mempty & type_ ?~ OpenApiTypeSingle OpenApiNull
+    go (Bool _) = mempty & type_ ?~ OpenApiTypeSingle OpenApiBoolean
     go (String _) = mempty & type_ ?~ OpenApiTypeSingle OpenApiString
     go (Number _) = mempty & type_ ?~ OpenApiTypeSingle OpenApiNumber
-    go (Array xs) = mempty
-      & type_   ?~ OpenApiTypeSingle OpenApiArray
-      & items ?~ case ischema of
+    go (Array xs) =
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiArray
+        & items ?~ case ischema of
           Just s -> OpenApiItemsObject (Inline s)
           -- heterogeneous array: collapse to an anyOf element schema (TODO(EP-4): prefixItems)
-          _      -> OpenApiItemsObject (Inline (mempty & anyOf ?~ map Inline ys))
+          _ -> OpenApiItemsObject (Inline (mempty & anyOf ?~ map Inline ys))
       where
         ys = map go (V.toList xs)
         allSame = and ((zipWith (==)) ys (tail ys))
 
         ischema = case ys of
-          (z:_) | allSame -> Just z
-          _               -> Nothing
-    go (Object o) = mempty
-      & type_         ?~ OpenApiTypeSingle OpenApiObject
-      & required      .~ sort (objectKeys o)
-      & properties    .~ fmap (Inline . go) (toInsOrdHashMap o)
+          (z : _) | allSame -> Just z
+          _ -> Nothing
+    go (Object o) =
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiObject
+        & required .~ sort (objectKeys o)
+        & properties .~ fmap (Inline . go) (toInsOrdHashMap o)
 
 -- | Make a restrictive sketch of a @Schema@ based on a @ToJSON@ instance.
 -- Produced schema uses as much constraints as possible.
@@ -542,49 +548,54 @@ sketchSchema = sketch . toJSON
 --     ],
 --     "type": "object"
 -- }
-sketchStrictSchema :: ToJSON a => a -> Schema
+sketchStrictSchema :: (ToJSON a) => a -> Schema
 sketchStrictSchema = go . toJSON
   where
-    go Null       = mempty & type_ ?~ OpenApiTypeSingle OpenApiNull
-    go js@(Bool _) = mempty
-      & type_ ?~ OpenApiTypeSingle OpenApiBoolean
-      & enum_ ?~ [js]
-    go js@(String s) = mempty
-      & type_ ?~ OpenApiTypeSingle OpenApiString
-      & maxLength ?~ fromIntegral (T.length s)
-      & minLength ?~ fromIntegral (T.length s)
-      & pattern   ?~ s
-      & enum_     ?~ [js]
-    go js@(Number n) = mempty
-      & type_       ?~ OpenApiTypeSingle OpenApiNumber
-      & maximum_    ?~ n
-      & minimum_    ?~ n
-      & multipleOf  ?~ n
-      & enum_       ?~ [js]
-    go js@(Array xs) = mempty
-      & type_       ?~ OpenApiTypeSingle OpenApiArray
-      & maxItems    ?~ fromIntegral sz
-      & minItems    ?~ fromIntegral sz
-      & items       ?~ OpenApiItemsObject (Inline (mempty & anyOf ?~ map (Inline . go) (V.toList xs)))
-      & uniqueItems ?~ allUnique
-      & enum_       ?~ [js]
+    go Null = mempty & type_ ?~ OpenApiTypeSingle OpenApiNull
+    go js@(Bool _) =
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiBoolean
+        & enum_ ?~ [js]
+    go js@(String s) =
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiString
+        & maxLength ?~ fromIntegral (T.length s)
+        & minLength ?~ fromIntegral (T.length s)
+        & pattern ?~ s
+        & enum_ ?~ [js]
+    go js@(Number n) =
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiNumber
+        & maximum_ ?~ n
+        & minimum_ ?~ n
+        & multipleOf ?~ n
+        & enum_ ?~ [js]
+    go js@(Array xs) =
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiArray
+        & maxItems ?~ fromIntegral sz
+        & minItems ?~ fromIntegral sz
+        & items ?~ OpenApiItemsObject (Inline (mempty & anyOf ?~ map (Inline . go) (V.toList xs)))
+        & uniqueItems ?~ allUnique
+        & enum_ ?~ [js]
       where
         sz = length xs
         allUnique = sz == HashSet.size (HashSet.fromList (V.toList xs))
-    go js@(Object o) = mempty
-      & type_         ?~ OpenApiTypeSingle OpenApiObject
-      & required      .~ sort names
-      & properties    .~ fmap (Inline . go) (toInsOrdHashMap o)
-      & maxProperties ?~ fromIntegral (length names)
-      & minProperties ?~ fromIntegral (length names)
-      & enum_         ?~ [js]
+    go js@(Object o) =
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiObject
+        & required .~ sort names
+        & properties .~ fmap (Inline . go) (toInsOrdHashMap o)
+        & maxProperties ?~ fromIntegral (length names)
+        & minProperties ?~ fromIntegral (length names)
+        & enum_ ?~ [js]
       where
         names = objectKeys o
 
 class GToSchema (f :: Type -> Type) where
   gdeclareNamedSchema :: SchemaOptions -> Proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 
-instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
+instance {-# OVERLAPPABLE #-} (ToSchema a) => ToSchema [a] where
   declareNamedSchema _ = do
     ref <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
@@ -592,79 +603,105 @@ instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
       & items ?~ OpenApiItemsObject ref
 
 instance {-# OVERLAPPING #-} ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Bool    where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Bool where declareNamedSchema = plain . paramSchemaToSchema
+
 instance ToSchema Integer where declareNamedSchema = plain . paramSchemaToSchema
+
 instance ToSchema Natural where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Int     where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Int8    where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Int16   where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Int32   where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Int64   where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Word    where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Word8   where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Word16  where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Word32  where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Word64  where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Int where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Int8 where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Int16 where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Int32 where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Int64 where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Word where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Word8 where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Word16 where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Word32 where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Word64 where declareNamedSchema = plain . paramSchemaToSchema
 
 instance ToSchema Char where
-  declareNamedSchema proxy = plain (paramSchemaToSchema proxy)
-    & mapped.OpenApiLens.schema.example ?~ toJSON '?'
+  declareNamedSchema proxy =
+    plain (paramSchemaToSchema proxy)
+      & mapped . OpenApiLens.schema . example ?~ toJSON '?'
 
-instance ToSchema Scientific  where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Double      where declareNamedSchema = plain . paramSchemaToSchema
-instance ToSchema Float       where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Scientific where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Double where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Float where declareNamedSchema = plain . paramSchemaToSchema
 
 instance (Typeable (Fixed a), HasResolution a) => ToSchema (Fixed a) where declareNamedSchema = plain . paramSchemaToSchema
 
-instance ToSchema a => ToSchema (Maybe a) where
+instance (ToSchema a) => ToSchema (Maybe a) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy a)
 
 instance (ToSchema a, ToSchema b) => ToSchema (Either a b) where
   -- To match Aeson instance
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions { sumEncoding = ObjectWithSingleField }
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions {sumEncoding = ObjectWithSingleField}
 
 instance ToSchema () where
   declareNamedSchema _ = pure (NamedSchema Nothing nullarySchema)
 
 -- | For @ToJSON@ instance, see <http://hackage.haskell.org/package/uuid-aeson uuid-aeson> package.
 instance ToSchema UUID.UUID where
-  declareNamedSchema p = pure $ named "UUID" $ paramSchemaToSchema p
-    & example ?~ toJSON (UUID.toText UUID.nil)
+  declareNamedSchema p =
+    pure $ named "UUID" $ paramSchemaToSchema p
+      & example ?~ toJSON (UUID.toText UUID.nil)
 
 instance (ToSchema a, ToSchema b) => ToSchema (a, b) where
   declareNamedSchema = fmap unname . genericDeclareNamedSchema defaultSchemaOptions
+
 instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c) where
   declareNamedSchema = fmap unname . genericDeclareNamedSchema defaultSchemaOptions
+
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d) => ToSchema (a, b, c, d) where
   declareNamedSchema = fmap unname . genericDeclareNamedSchema defaultSchemaOptions
+
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e) => ToSchema (a, b, c, d, e) where
   declareNamedSchema = fmap unname . genericDeclareNamedSchema defaultSchemaOptions
+
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f) => ToSchema (a, b, c, d, e, f) where
   declareNamedSchema = fmap unname . genericDeclareNamedSchema defaultSchemaOptions
+
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f, ToSchema g) => ToSchema (a, b, c, d, e, f, g) where
   declareNamedSchema = fmap unname . genericDeclareNamedSchema defaultSchemaOptions
 
 timeSchema :: T.Text -> Schema
-timeSchema fmt = mempty
-  & type_ ?~ OpenApiTypeSingle OpenApiString
-  & format ?~ fmt
+timeSchema fmt =
+  mempty
+    & type_ ?~ OpenApiTypeSingle OpenApiString
+    & format ?~ fmt
 
 -- | Format @"date"@ corresponds to @yyyy-mm-dd@ format.
 instance ToSchema Day where
-  declareNamedSchema _ = pure $ named "Day" $ timeSchema "date"
-    & example ?~ toJSON (fromGregorian 2016 7 22)
+  declareNamedSchema _ =
+    pure $ named "Day" $ timeSchema "date"
+      & example ?~ toJSON (fromGregorian 2016 7 22)
 
 -- |
 -- >>> toSchema (Proxy :: Proxy LocalTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToSchema LocalTime where
-  declareNamedSchema _ = pure $ named "LocalTime" $ timeSchema "yyyy-mm-ddThh:MM:ss"
-    & example ?~ toJSON (LocalTime (fromGregorian 2016 7 22) (TimeOfDay 7 40 0))
+  declareNamedSchema _ =
+    pure $ named "LocalTime" $ timeSchema "yyyy-mm-ddThh:MM:ss"
+      & example ?~ toJSON (LocalTime (fromGregorian 2016 7 22) (TimeOfDay 7 40 0))
 
 -- | Format @"date-time"@ corresponds to @yyyy-mm-ddThh:MM:ss(Z|+hh:MM)@ format.
 instance ToSchema ZonedTime where
-  declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "date-time"
-    & example ?~ toJSON (ZonedTime (LocalTime (fromGregorian 2016 7 22) (TimeOfDay 7 40 0)) (hoursToTimeZone 3))
+  declareNamedSchema _ =
+    pure $ named "ZonedTime" $ timeSchema "date-time"
+      & example ?~ toJSON (ZonedTime (LocalTime (fromGregorian 2016 7 22) (TimeOfDay 7 40 0)) (hoursToTimeZone 3))
 
 instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Pico)
@@ -673,22 +710,31 @@ instance ToSchema NominalDiffTime where
 -- >>> toSchema (Proxy :: Proxy UTCTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ssZ"
 instance ToSchema UTCTime where
-  declareNamedSchema _ = pure $ named "UTCTime" $ timeSchema "yyyy-mm-ddThh:MM:ssZ"
-    & example ?~ toJSON (UTCTime (fromGregorian 2016 7 22) 0)
+  declareNamedSchema _ =
+    pure $ named "UTCTime" $ timeSchema "yyyy-mm-ddThh:MM:ssZ"
+      & example ?~ toJSON (UTCTime (fromGregorian 2016 7 22) 0)
 
 instance ToSchema T.Text where declareNamedSchema = plain . paramSchemaToSchema
+
 instance ToSchema TL.Text where declareNamedSchema = plain . paramSchemaToSchema
 
 instance ToSchema Version where declareNamedSchema = plain . paramSchemaToSchema
 
 type family ToSchemaByteStringError bs where
-  ToSchemaByteStringError bs = TypeError
-      ( Text "Impossible to have an instance " :<>: ShowType (ToSchema bs) :<>: Text "."
-   :$$: Text "Please, use a newtype wrapper around " :<>: ShowType bs :<>: Text " instead."
-   :$$: Text "Consider using byteSchema or binarySchema templates." )
+  ToSchemaByteStringError bs =
+    TypeError
+      ( Text "Impossible to have an instance "
+          :<>: ShowType (ToSchema bs)
+          :<>: Text "."
+          :$$: Text "Please, use a newtype wrapper around "
+          :<>: ShowType bs
+          :<>: Text " instead."
+          :$$: Text "Consider using byteSchema or binarySchema templates."
+      )
 
-instance ToSchemaByteStringError BS.ByteString  => ToSchema BS.ByteString  where declareNamedSchema = error "impossible"
-instance ToSchemaByteStringError BSL.ByteString => ToSchema BSL.ByteString where declareNamedSchema = error "impossible"
+instance (ToSchemaByteStringError BS.ByteString) => ToSchema BS.ByteString where declareNamedSchema = error "impossible"
+
+instance (ToSchemaByteStringError BSL.ByteString) => ToSchema BSL.ByteString where declareNamedSchema = error "impossible"
 
 instance ToSchema IntSet where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set Int))
 
@@ -698,8 +744,8 @@ instance (ToSchema a) => ToSchema (IntMap a) where
 
 instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
   declareNamedSchema _ = case toJSONKey :: ToJSONKeyFunction k of
-      ToJSONKeyText  _ _ -> declareObjectMapSchema
-      ToJSONKeyValue _ _ -> declareNamedSchema (Proxy :: Proxy [(k, v)])
+    ToJSONKeyText _ _ -> declareObjectMapSchema
+    ToJSONKeyValue _ _ -> declareNamedSchema (Proxy :: Proxy [(k, v)])
     where
       declareObjectMapSchema = do
         schema <- declareSchemaRef (Proxy :: Proxy v)
@@ -711,41 +757,50 @@ instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map k v))
 
 instance {-# OVERLAPPING #-} ToSchema Object where
-  declareNamedSchema _ = pure $ NamedSchema (Just "Object") $ mempty
-    & type_ ?~ OpenApiTypeSingle OpenApiObject
-    & description ?~ "Arbitrary JSON object."
-    & additionalProperties ?~ AdditionalPropertiesAllowed True
+  declareNamedSchema _ =
+    pure $ NamedSchema (Just "Object") $ mempty
+      & type_ ?~ OpenApiTypeSingle OpenApiObject
+      & description ?~ "Arbitrary JSON object."
+      & additionalProperties ?~ AdditionalPropertiesAllowed True
 
-instance ToSchema a => ToSchema (V.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
-instance ToSchema a => ToSchema (VU.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
-instance ToSchema a => ToSchema (VS.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
-instance ToSchema a => ToSchema (VP.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
+instance (ToSchema a) => ToSchema (V.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
 
-instance ToSchema a => ToSchema (Set a) where
+instance (ToSchema a) => ToSchema (VU.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
+
+instance (ToSchema a) => ToSchema (VS.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
+
+instance (ToSchema a) => ToSchema (VP.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
+
+instance (ToSchema a) => ToSchema (Set a) where
   declareNamedSchema _ = do
     schema <- declareSchema (Proxy :: Proxy [a])
     return $ unnamed $ schema
       & uniqueItems ?~ True
 
-instance ToSchema a => ToSchema (HashSet a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set a))
+instance (ToSchema a) => ToSchema (HashSet a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set a))
 
 -- | @since 2.2.1
-instance ToSchema a => ToSchema (NonEmpty a) where
+instance (ToSchema a) => ToSchema (NonEmpty a) where
   declareNamedSchema _ = do
     schema <- declareSchema (Proxy :: Proxy [a])
     return $ unnamed $ schema
       & minItems .~ Just 1
 
 instance ToSchema All where declareNamedSchema = plain . paramSchemaToSchema
+
 instance ToSchema Any where declareNamedSchema = plain . paramSchemaToSchema
 
-instance ToSchema a => ToSchema (Sum a)     where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Product a) where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (First a)   where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Last a)    where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Dual a)    where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+instance (ToSchema a) => ToSchema (Sum a) where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
 
-instance ToSchema a => ToSchema (Identity a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy a)
+instance (ToSchema a) => ToSchema (Product a) where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+
+instance (ToSchema a) => ToSchema (First a) where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+
+instance (ToSchema a) => ToSchema (Last a) where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+
+instance (ToSchema a) => ToSchema (Dual a) where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+
+instance (ToSchema a) => ToSchema (Identity a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy a)
 
 -- | Default schema for @'Bounded'@, @'Integral'@ types.
 --
@@ -756,26 +811,35 @@ instance ToSchema a => ToSchema (Identity a) where declareNamedSchema _ = declar
 --     "type": "integer"
 -- }
 toSchemaBoundedIntegral :: forall a. (Bounded a, Integral a) => Proxy a -> Schema
-toSchemaBoundedIntegral _ = mempty
-  & type_ ?~ OpenApiTypeSingle OpenApiInteger
-  & minimum_ ?~ fromInteger (toInteger (minBound :: a))
-  & maximum_ ?~ fromInteger (toInteger (maxBound :: a))
+toSchemaBoundedIntegral _ =
+  mempty
+    & type_ ?~ OpenApiTypeSingle OpenApiInteger
+    & minimum_ ?~ fromInteger (toInteger (minBound :: a))
+    & maximum_ ?~ fromInteger (toInteger (maxBound :: a))
 
 -- | Default generic named schema for @'Bounded'@, @'Integral'@ types.
-genericToNamedSchemaBoundedIntegral :: forall a d f.
-  ( Bounded a, Integral a
-  , Generic a, Rep a ~ D1 d f, Datatype d)
-  => SchemaOptions -> Proxy a -> NamedSchema
-genericToNamedSchemaBoundedIntegral opts proxy
-  = genericNameSchema opts proxy (toSchemaBoundedIntegral proxy)
+genericToNamedSchemaBoundedIntegral ::
+  forall a d f.
+  ( Bounded a,
+    Integral a,
+    Generic a,
+    Rep a ~ D1 d f,
+    Datatype d
+  ) =>
+  SchemaOptions -> Proxy a -> NamedSchema
+genericToNamedSchemaBoundedIntegral opts proxy =
+  genericNameSchema opts proxy (toSchemaBoundedIntegral proxy)
 
 -- | Declare a named schema for a @newtype@ wrapper.
-genericDeclareNamedSchemaNewtype :: forall a d c s i inner.
-  (Generic a, Datatype d, Rep a ~ D1 d (C1 c (S1 s (K1 i inner))))
-  => SchemaOptions                                          -- ^ How to derive the name.
-  -> (Proxy inner -> Declare (Definitions Schema) Schema)   -- ^ How to create a schema for the wrapped type.
-  -> Proxy a
-  -> Declare (Definitions Schema) NamedSchema
+genericDeclareNamedSchemaNewtype ::
+  forall a d c s i inner.
+  (Generic a, Datatype d, Rep a ~ D1 d (C1 c (S1 s (K1 i inner)))) =>
+  -- | How to derive the name.
+  SchemaOptions ->
+  -- | How to create a schema for the wrapped type.
+  (Proxy inner -> Declare (Definitions Schema) Schema) ->
+  Proxy a ->
+  Declare (Definitions Schema) NamedSchema
 genericDeclareNamedSchemaNewtype opts f proxy = genericNameSchema opts proxy <$> f (Proxy :: Proxy inner)
 
 -- | Declare @Schema@ for a mapping with 'Bounded' 'Enum' keys.
@@ -810,17 +874,18 @@ genericDeclareNamedSchemaNewtype opts f proxy = genericNameSchema opts proxy <$>
 --
 -- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
 -- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
-declareSchemaBoundedEnumKeyMapping :: forall map key value.
-  (Bounded key, Enum key, ToJSONKey key, ToSchema key, ToSchema value)
-  => Proxy (map key value) -> Declare (Definitions Schema) Schema
+declareSchemaBoundedEnumKeyMapping ::
+  forall map key value.
+  (Bounded key, Enum key, ToJSONKey key, ToSchema key, ToSchema value) =>
+  Proxy (map key value) -> Declare (Definitions Schema) Schema
 declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key of
   ToJSONKeyText getKey _ -> objectSchema getKey
   ToJSONKeyValue _ _ -> declareSchema (Proxy :: Proxy [(key, value)])
   where
     objectSchema getKey = do
       valueRef <- declareSchemaRef (Proxy :: Proxy value)
-      let allKeys   = [minBound..maxBound :: key]
-          mkPair k  =  (keyToText $ getKey k, valueRef)
+      let allKeys = [minBound .. maxBound :: key]
+          mkPair k = (keyToText $ getKey k, valueRef)
       return $ mempty
         & type_ ?~ OpenApiTypeSingle OpenApiObject
         & properties .~ InsOrdHashMap.fromList (map mkPair allKeys)
@@ -857,13 +922,15 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
 --
 -- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
 -- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
-toSchemaBoundedEnumKeyMapping :: forall map key value.
-  (Bounded key, Enum key, ToJSONKey key, ToSchema key, ToSchema value)
-  => Proxy (map key value) -> Schema
+toSchemaBoundedEnumKeyMapping ::
+  forall map key value.
+  (Bounded key, Enum key, ToJSONKey key, ToSchema key, ToSchema value) =>
+  Proxy (map key value) -> Schema
 toSchemaBoundedEnumKeyMapping = flip evalDeclare mempty . declareSchemaBoundedEnumKeyMapping
 
 -- | A configurable generic @Schema@ creator.
-genericDeclareSchema :: (Generic a, GToSchema (Rep a), Typeable a) =>
+genericDeclareSchema ::
+  (Generic a, GToSchema (Rep a), Typeable a) =>
   SchemaOptions -> Proxy a -> Declare (Definitions Schema) Schema
 genericDeclareSchema opts proxy = _namedSchemaSchema <$> genericDeclareNamedSchema opts proxy
 
@@ -879,7 +946,9 @@ genericDeclareSchema opts proxy = _namedSchemaSchema <$> genericDeclareNamedSche
 --
 -- >>> _namedSchemaName $ undeclare $ genericDeclareNamedSchema defaultSchemaOptions (Proxy :: Proxy (Either Int Bool))
 -- Just "Either_Int_Bool"
-genericDeclareNamedSchema :: forall a. (Generic a, GToSchema (Rep a), Typeable a) =>
+genericDeclareNamedSchema ::
+  forall a.
+  (Generic a, GToSchema (Rep a), Typeable a) =>
   SchemaOptions -> Proxy a -> Declare (Definitions Schema) NamedSchema
 genericDeclareNamedSchema opts _ =
   rename (Just $ T.pack name) <$> gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
@@ -889,39 +958,41 @@ genericDeclareNamedSchema opts _ =
     orig = fmap unspace $ show $ typeRep @a
     name = datatypeNameModifier opts orig
 
-
 -- | Derive a 'Generic'-based name for a datatype and assign it to a given @Schema@.
-genericNameSchema :: forall a d f.
-  (Generic a, Rep a ~ D1 d f, Datatype d)
-  => SchemaOptions -> Proxy a -> Schema -> NamedSchema
+genericNameSchema ::
+  forall a d f.
+  (Generic a, Rep a ~ D1 d f, Datatype d) =>
+  SchemaOptions -> Proxy a -> Schema -> NamedSchema
 genericNameSchema opts _ = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d))
 
-gdatatypeSchemaName :: forall d. Datatype d => SchemaOptions -> Proxy d -> Maybe T.Text
+gdatatypeSchemaName :: forall d. (Datatype d) => SchemaOptions -> Proxy d -> Maybe T.Text
 gdatatypeSchemaName opts _ = case orig of
-  (c:_) | isAlpha c && isUpper c -> Just (T.pack name)
+  (c : _) | isAlpha c && isUpper c -> Just (T.pack name)
   _ -> Nothing
   where
     orig = datatypeName (Proxy3 :: Proxy3 d f a)
     name = datatypeNameModifier opts orig
 
 -- | Construct 'NamedSchema' using @ToParamSchema@.
-paramSchemaToNamedSchema :: (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d) =>
+paramSchemaToNamedSchema ::
+  (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d) =>
   SchemaOptions -> Proxy a -> NamedSchema
 paramSchemaToNamedSchema opts proxy = genericNameSchema opts proxy (paramSchemaToSchema proxy)
 
 -- | Construct @Schema@ using @ToParamSchema@.
-paramSchemaToSchema :: ToParamSchema a => Proxy a -> Schema
+paramSchemaToSchema :: (ToParamSchema a) => Proxy a -> Schema
 paramSchemaToSchema = toParamSchema
 
 nullarySchema :: Schema
-nullarySchema = mempty
-  & type_ ?~ OpenApiTypeSingle OpenApiArray
-  & maxItems ?~ 0
+nullarySchema =
+  mempty
+    & type_ ?~ OpenApiTypeSingle OpenApiArray
+    & maxItems ?~ 0
 
-gtoNamedSchema :: GToSchema f => SchemaOptions -> Proxy f -> NamedSchema
+gtoNamedSchema :: (GToSchema f) => SchemaOptions -> Proxy f -> NamedSchema
 gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
 
-gdeclareSchema :: GToSchema f => SchemaOptions -> Proxy f -> Declare (Definitions Schema) Schema
+gdeclareSchema :: (GToSchema f) => SchemaOptions -> Proxy f -> Declare (Definitions Schema) Schema
 gdeclareSchema opts proxy = _namedSchemaSchema <$> gdeclareNamedSchema opts proxy mempty
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
@@ -934,10 +1005,10 @@ instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
     where
       name = gdatatypeSchemaName opts (Proxy :: Proxy d)
 
-instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
+instance {-# OVERLAPPABLE #-} (GToSchema f) => GToSchema (C1 c f) where
   gdeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy f)
 
-instance {-# OVERLAPPING #-} Constructor c => GToSchema (C1 c U1) where
+instance {-# OVERLAPPING #-} (Constructor c) => GToSchema (C1 c U1) where
   gdeclareNamedSchema = gdeclareNamedSumSchema
 
 -- | Single field constructor.
@@ -957,9 +1028,9 @@ instance (Selector s, GToSchema f, GToSchema (S1 s f)) => GToSchema (C1 c (S1 s 
     where
       (_, NamedSchema _ schema) = runDeclare recordSchema mempty
       recordSchema = gdeclareNamedSchema opts (Proxy :: Proxy (S1 s f)) s
-      fieldSchema  = gdeclareNamedSchema opts (Proxy :: Proxy f) s
+      fieldSchema = gdeclareNamedSchema opts (Proxy :: Proxy f) s
 
-gdeclareSchemaRef :: GToSchema a => SchemaOptions -> Proxy a -> Declare (Definitions Schema) (Referenced Schema)
+gdeclareSchemaRef :: (GToSchema a) => SchemaOptions -> Proxy a -> Declare (Definitions Schema) (Referenced Schema)
 gdeclareSchemaRef opts proxy = do
   case gtoNamedSchema opts proxy of
     NamedSchema (Just name) schema -> do
@@ -993,21 +1064,25 @@ appendItem x (Just (OpenApiItemsObject (Inline s))) =
 appendItem _ (Just _) =
   error "GToSchema.appendItem: cannot append to a non-tuple items value"
 
-withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) =>
+withFieldSchema ::
+  forall proxy s f.
+  (Selector s, GToSchema f) =>
   SchemaOptions -> proxy s f -> Bool -> Schema -> Declare (Definitions Schema) Schema
 withFieldSchema opts _ isRequiredField schema = do
   ref <- gdeclareSchemaRef opts (Proxy :: Proxy f)
-  return $
-    if T.null fname
-      then schema
-        & type_ ?~ OpenApiTypeSingle OpenApiArray
-        & items %~ appendItem ref
-        & maxItems %~ Just . maybe 1 (+1)   -- increment maxItems
-        & minItems %~ Just . maybe 1 (+1)   -- increment minItems
-      else schema
-        & type_ ?~ OpenApiTypeSingle OpenApiObject
-        & properties . at fname ?~ ref
-        & if isRequiredField
+  return
+    $ if T.null fname
+      then
+        schema
+          & type_ ?~ OpenApiTypeSingle OpenApiArray
+          & items %~ appendItem ref
+          & maxItems %~ Just . maybe 1 (+ 1) -- increment maxItems
+          & minItems %~ Just . maybe 1 (+ 1) -- increment minItems
+      else
+        schema
+          & type_ ?~ OpenApiTypeSingle OpenApiObject
+          & properties . at fname ?~ ref
+          & if isRequiredField
             then required %~ (++ [fname])
             else id
   where
@@ -1021,37 +1096,40 @@ instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (
 instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
   gdeclareNamedSchema opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s f) True
 
-instance {-# OVERLAPPING #-} ToSchema c => GToSchema (K1 i (Maybe c)) where
+instance {-# OVERLAPPING #-} (ToSchema c) => GToSchema (K1 i (Maybe c)) where
   gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
-instance {-# OVERLAPPABLE #-} ToSchema c => GToSchema (K1 i c) where
+instance {-# OVERLAPPABLE #-} (ToSchema c) => GToSchema (K1 i c) where
   gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
-instance ( GSumToSchema f
-         , GSumToSchema g
-         ) => GToSchema (f :+: g)
-   where
+instance
+  ( GSumToSchema f,
+    GSumToSchema g
+  ) =>
+  GToSchema (f :+: g)
+  where
   -- Aeson does not unwrap unary record in sum types.
-  gdeclareNamedSchema opts = gdeclareNamedSumSchema (opts { unwrapUnaryRecords = False })
+  gdeclareNamedSchema opts = gdeclareNamedSumSchema (opts {unwrapUnaryRecords = False})
 
-gdeclareNamedSumSchema :: GSumToSchema f => SchemaOptions -> Proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
+gdeclareNamedSumSchema :: (GSumToSchema f) => SchemaOptions -> Proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 gdeclareNamedSumSchema opts proxy _
   | allNullaryToStringTag opts && allNullary = pure $ unnamed (toStringTag sumSchemas)
   | otherwise = do
-    (schemas, _) <- runWriterT declareSumSchema
-    return $ unnamed $ mempty
-      & oneOf ?~ (snd <$> schemas)
+      (schemas, _) <- runWriterT declareSumSchema
+      return $ unnamed $ mempty
+        & oneOf ?~ (snd <$> schemas)
   where
     declareSumSchema = gsumToSchema opts proxy
     (sumSchemas, All allNullary) = undeclare (runWriterT declareSumSchema)
 
-    toStringTag schemas = mempty
-      & type_ ?~ OpenApiTypeSingle OpenApiString
-      & enum_ ?~ map (String . fst) sumSchemas
+    toStringTag schemas =
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiString
+        & enum_ ?~ map (String . fst) sumSchemas
 
 type AllNullary = All
 
-class GSumToSchema (f :: Type -> Type)  where
+class GSumToSchema (f :: Type -> Type) where
   gsumToSchema :: SchemaOptions -> Proxy f -> WriterT AllNullary (Declare (Definitions Schema)) [(T.Text, Referenced Schema)]
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
@@ -1059,15 +1137,18 @@ instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
     (<>) <$> gsumToSchema opts (Proxy :: Proxy f) <*> gsumToSchema opts (Proxy :: Proxy g)
 
 -- | Convert one component of the sum to schema, to be later combined with @oneOf@.
-gsumConToSchemaWith :: forall c f. (GToSchema (C1 c f), Constructor c) =>
+gsumConToSchemaWith ::
+  forall c f.
+  (GToSchema (C1 c f), Constructor c) =>
   Maybe (Referenced Schema) -> SchemaOptions -> Proxy (C1 c f) -> (T.Text, Referenced Schema)
 gsumConToSchemaWith ref opts _ = (tag, withTitle)
   where
     -- Give sub-schemas @title@ attribute with constructor name, if none present.
     -- This will look prettier in rendering tools.
     withTitle = case schema of
-      Inline sub -> Inline $ sub
-        & title %~ (<|> Just (T.pack constructorName))
+      Inline sub ->
+        Inline $ sub
+          & title %~ (<|> Just (T.pack constructorName))
       s -> s
 
     schema = case sumEncoding opts of
@@ -1075,34 +1156,40 @@ gsumConToSchemaWith ref opts _ = (tag, withTitle)
         case ref of
           -- If subschema is an object and constructor is a record, we add tag directly
           -- to the record, as Aeson does it.
-          Just (Inline sub) | (singleType =<< sub ^. type_) == Just OpenApiObject && isRecord -> Inline $ sub
-            & required <>~ [T.pack tagField]
-            & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])
-
+          Just (Inline sub)
+            | (singleType =<< sub ^. type_) == Just OpenApiObject && isRecord ->
+                Inline $ sub
+                  & required <>~ [T.pack tagField]
+                  & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])
           -- If it is not a record, we need to put subschema into "contents" field.
-          _ | not isRecord -> Inline $ mempty
-            & type_ ?~ OpenApiTypeSingle OpenApiObject
-            & required .~ [T.pack tagField]
-            & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])
-              -- If constructor is nullary, there is no content.
-            & case ref of
-                Just r -> (properties . at (T.pack contentsField) ?~ r) . (required <>~ [T.pack contentsField])
-                Nothing -> id
-
+          _
+            | not isRecord ->
+                Inline $ mempty
+                  & type_ ?~ OpenApiTypeSingle OpenApiObject
+                  & required .~ [T.pack tagField]
+                  & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])
+                  -- If constructor is nullary, there is no content.
+                  & case ref of
+                    Just r -> (properties . at (T.pack contentsField) ?~ r) . (required <>~ [T.pack contentsField])
+                    Nothing -> id
           -- In the remaining cases we combine "tag" object and "contents" object using allOf.
-          _ -> Inline $ mempty
-            & allOf ?~ [Inline $ mempty
-              & type_ ?~ OpenApiTypeSingle OpenApiObject
-              & required .~ (T.pack tagField : if isRecord then [] else [T.pack contentsField])
-              & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])]
-            & if isRecord
-                 then allOf . _Just <>~ [refOrNullary]
-                 else allOf . _Just <>~ [Inline $ mempty & type_ ?~ OpenApiTypeSingle OpenApiObject & properties . at (T.pack contentsField) ?~ refOrNullary]
+          _ ->
+            Inline $ mempty
+              & allOf
+                ?~ [ Inline $ mempty
+                       & type_ ?~ OpenApiTypeSingle OpenApiObject
+                       & required .~ (T.pack tagField : if isRecord then [] else [T.pack contentsField])
+                       & properties . at (T.pack tagField) ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag])
+                   ]
+              & if isRecord
+                then allOf . _Just <>~ [refOrNullary]
+                else allOf . _Just <>~ [Inline $ mempty & type_ ?~ OpenApiTypeSingle OpenApiObject & properties . at (T.pack contentsField) ?~ refOrNullary]
       UntaggedValue -> refOrEnum -- Aeson encodes nullary constructors as strings in this case.
-      ObjectWithSingleField -> Inline $ mempty
-        & type_ ?~ OpenApiTypeSingle OpenApiObject
-        & required .~ [tag]
-        & properties . at tag ?~ refOrNullary
+      ObjectWithSingleField ->
+        Inline $ mempty
+          & type_ ?~ OpenApiTypeSingle OpenApiObject
+          & required .~ [tag]
+          & properties . at tag ?~ refOrNullary
       TwoElemArray -> error "unrepresentable in OpenAPI 3"
 
     constructorName = conName (Proxy3 :: Proxy3 c f p)
@@ -1111,7 +1198,8 @@ gsumConToSchemaWith ref opts _ = (tag, withTitle)
     refOrNullary = fromMaybe (Inline nullarySchema) ref
     refOrEnum = fromMaybe (Inline $ mempty & type_ ?~ OpenApiTypeSingle OpenApiString & enum_ ?~ [String tag]) ref
 
-gsumConToSchema :: (GToSchema (C1 c f), Constructor c) =>
+gsumConToSchema ::
+  (GToSchema (C1 c f), Constructor c) =>
   SchemaOptions -> Proxy (C1 c f) -> Declare (Definitions Schema) [(T.Text, Referenced Schema)]
 gsumConToSchema opts proxy = do
   ref <- gdeclareSchemaRef opts proxy
@@ -1127,20 +1215,19 @@ instance (Constructor c, Selector s, GToSchema f) => GSumToSchema (C1 c (S1 s f)
     tell (All False)
     lift $ gsumConToSchema opts proxy
 
-instance Constructor c => GSumToSchema (C1 c U1) where
-  gsumToSchema opts proxy = pure $ (:[]) $ gsumConToSchemaWith Nothing opts proxy
+instance (Constructor c) => GSumToSchema (C1 c U1) where
+  gsumToSchema opts proxy = pure $ (: []) $ gsumConToSchemaWith Nothing opts proxy
 
 data Proxy2 a b = Proxy2
 
 data Proxy3 a b c = Proxy3
 
-{- $setup
->>> import Data.OpenApi
->>> import Data.Aeson (encode)
->>> import Data.Aeson.Types (toJSONKeyText)
->>> import Data.OpenApi.Internal.Utils
->>> :set -XScopedTypeVariables
->>> :set -XDeriveAnyClass
->>> :set -XStandaloneDeriving
->>> :set -XTypeApplications
--}
+-- $setup
+-- >>> import Data.OpenApi
+-- >>> import Data.Aeson (encode)
+-- >>> import Data.Aeson.Types (toJSONKeyText)
+-- >>> import Data.OpenApi.Internal.Utils
+-- >>> :set -XScopedTypeVariables
+-- >>> :set -XDeriveAnyClass
+-- >>> :set -XStandaloneDeriving
+-- >>> :set -XTypeApplications

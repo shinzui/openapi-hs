@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+
 -- |
 -- Module:      Data.OpenApi.Lens
 -- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
@@ -9,9 +10,9 @@ module Data.OpenApi.Lens where
 
 import Control.Lens
 import Data.Aeson (Value)
-import Data.Scientific (Scientific)
 import Data.OpenApi.Internal
 import Data.OpenApi.Internal.Utils
+import Data.Scientific (Scientific)
 import Data.Text (Text)
 
 -- * Classy lenses
@@ -49,98 +50,142 @@ makeFields ''Discriminator
 makeFields ''Link
 
 -- * Prisms
+
 -- ** 'SecuritySchemeType' prisms
+
 makePrisms ''SecuritySchemeType
+
 -- ** 'Referenced' prisms
+
 makePrisms ''Referenced
 
 -- ** 'OpenApiItems' prisms
 
 _OpenApiItemsBoolean :: Review OpenApiItems Bool
-_OpenApiItemsBoolean
-  = unto (\x -> OpenApiItemsBoolean x)
+_OpenApiItemsBoolean =
+  unto (\x -> OpenApiItemsBoolean x)
 
 _OpenApiItemsObject :: Review OpenApiItems (Referenced Schema)
-_OpenApiItemsObject
-  = unto (\x -> OpenApiItemsObject x)
+_OpenApiItemsObject =
+  unto (\x -> OpenApiItemsObject x)
 
 -- =============================================================
 -- More helpful instances for easier access to schema properties
 
 type instance Index Responses = HttpStatusCode
+
 type instance Index Operation = HttpStatusCode
 
 type instance IxValue Responses = Referenced Response
+
 type instance IxValue Operation = Referenced Response
 
 instance Ixed Responses where ix n = responses . ix n
-instance At   Responses where at n = responses . at n
+
+instance At Responses where at n = responses . at n
 
 instance Ixed Operation where ix n = responses . ix n
-instance At   Operation where at n = responses . at n
 
-instance HasType NamedSchema (Maybe OpenApiTypeValue) where type_ = schema.type_
+instance At Operation where at n = responses . at n
+
+instance HasType NamedSchema (Maybe OpenApiTypeValue) where type_ = schema . type_
 
 -- OVERLAPPABLE instances
 
 instance
   {-# OVERLAPPABLE #-}
-  HasSchema s Schema
-  => HasFormat s (Maybe Format) where
-  format = schema.format
+  (HasSchema s Schema) =>
+  HasFormat s (Maybe Format)
+  where
+  format = schema . format
 
 instance
   {-# OVERLAPPABLE #-}
-  HasSchema s Schema
-  => HasItems s (Maybe OpenApiItems) where
-  items = schema.items
+  (HasSchema s Schema) =>
+  HasItems s (Maybe OpenApiItems)
+  where
+  items = schema . items
 
 instance
   {-# OVERLAPPABLE #-}
-  HasSchema s Schema
-  => HasMaximum s (Maybe Scientific) where
-  maximum_ = schema.maximum_
+  (HasSchema s Schema) =>
+  HasMaximum s (Maybe Scientific)
+  where
+  maximum_ = schema . maximum_
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasExclusiveMaximum s (Maybe Scientific) where
-  exclusiveMaximum = schema.exclusiveMaximum
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasExclusiveMaximum s (Maybe Scientific)
+  where
+  exclusiveMaximum = schema . exclusiveMaximum
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasMinimum s (Maybe Scientific) where
-  minimum_ = schema.minimum_
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasMinimum s (Maybe Scientific)
+  where
+  minimum_ = schema . minimum_
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasExclusiveMinimum s (Maybe Scientific) where
-  exclusiveMinimum = schema.exclusiveMinimum
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasExclusiveMinimum s (Maybe Scientific)
+  where
+  exclusiveMinimum = schema . exclusiveMinimum
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasMaxLength s (Maybe Integer) where
-  maxLength = schema.maxLength
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasMaxLength s (Maybe Integer)
+  where
+  maxLength = schema . maxLength
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasMinLength s (Maybe Integer) where
-  minLength = schema.minLength
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasMinLength s (Maybe Integer)
+  where
+  minLength = schema . minLength
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasPattern s (Maybe Text) where
-  pattern = schema.pattern
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasPattern s (Maybe Text)
+  where
+  pattern = schema . pattern
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasMaxItems s (Maybe Integer) where
-  maxItems = schema.maxItems
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasMaxItems s (Maybe Integer)
+  where
+  maxItems = schema . maxItems
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasMinItems s (Maybe Integer) where
-  minItems = schema.minItems
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasMinItems s (Maybe Integer)
+  where
+  minItems = schema . minItems
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasUniqueItems s (Maybe Bool) where
-  uniqueItems = schema.uniqueItems
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasUniqueItems s (Maybe Bool)
+  where
+  uniqueItems = schema . uniqueItems
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasEnum s (Maybe [Value]) where
-  enum_ = schema.enum_
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasEnum s (Maybe [Value])
+  where
+  enum_ = schema . enum_
 
-instance {-# OVERLAPPABLE #-} HasSchema s Schema
-  => HasMultipleOf s (Maybe Scientific) where
-  multipleOf = schema.multipleOf
+instance
+  {-# OVERLAPPABLE #-}
+  (HasSchema s Schema) =>
+  HasMultipleOf s (Maybe Scientific)
+  where
+  multipleOf = schema . multipleOf
