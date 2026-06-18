@@ -34,7 +34,7 @@ data UserSummary = UserSummary
   { summaryUsername :: Username,
     summaryUserid :: Int
   }
-  deriving (Generic)
+  deriving stock (Generic)
 
 instance ToSchema UserSummary where
   declareNamedSchema _ = do
@@ -60,10 +60,12 @@ data UserDetailed = UserDetailed
     userid :: Int,
     groups :: [Group]
   }
-  deriving (Generic, ToSchema)
+  deriving stock (Generic)
+  deriving anyclass (ToSchema)
 
 newtype Package = Package {packageName :: Text}
-  deriving (Generic, ToSchema)
+  deriving stock (Generic)
+  deriving anyclass (ToSchema)
 
 hackageOpenApi :: OpenApi
 hackageOpenApi = spec & components . schemas .~ defs

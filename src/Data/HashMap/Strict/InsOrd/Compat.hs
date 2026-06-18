@@ -172,7 +172,8 @@ import Control.Lens
 import qualified Optics.Core         as Optics
 
 newtype InsOrdHashMap k v = InsOrdHashMap { unCompatInsOrdHashMap :: InsOrdHashMap.InsOrdHashMap k v }
-  deriving (Show, Read, Data, Functor, Foldable, Traversable, Semigroup, Monoid)
+  deriving stock (Show, Read, Data, Functor, Foldable, Traversable)
+  deriving newtype (Semigroup, Monoid)
 
 instance (Eq k, Eq v) => Eq (InsOrdHashMap k v) where
     a == b = toHashMap a == toHashMap b

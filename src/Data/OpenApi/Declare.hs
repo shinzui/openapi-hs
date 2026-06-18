@@ -36,7 +36,7 @@ import Prelude ()
 --
 --  * a writer monad transformer with the extra ability to read all previous output.
 newtype DeclareT d m a = DeclareT {runDeclareT :: d -> m (d, a)}
-  deriving (Functor)
+  deriving stock (Functor)
 
 instance (Applicative m, Monad m, Monoid d) => Applicative (DeclareT d m) where
   pure x = DeclareT (\_ -> pure (mempty, x))

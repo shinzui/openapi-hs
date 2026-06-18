@@ -179,7 +179,7 @@ type ValidationError = String
 data Result a
   = Failed [ValidationError]  -- ^ Validation failed with a list of error messages.
   | Passed a                  -- ^ Validation passed.
-  deriving (Eq, Show, Functor)
+  deriving stock (Eq, Show, Functor)
 
 instance Applicative Result where
   pure = Passed
@@ -222,7 +222,7 @@ defaultConfig = Config
 
 -- | Value validation.
 newtype Validation s a = Validation { runValidation :: Config -> s -> Result a }
-  deriving (Functor)
+  deriving stock (Functor)
 
 instance Applicative (Validation schema) where
   pure x = Validation (\_ _ -> pure x)

@@ -117,7 +117,7 @@ data OpenApi = OpenApi
     -- | The spec of OpenApi this spec adheres to. Must be between 'lowerOpenApiSpecVersion' and 'upperOpenApiSpecVersion'
     _openApiOpenapi :: OpenApiSpecVersion
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | This is the lower version of the OpenApi Spec this library can parse or produce
 lowerOpenApiSpecVersion :: Version
@@ -132,7 +132,7 @@ upperOpenApiSpecVersion = makeVersion [3, 1, 1]
 -- This is NOT stored on any type and does not keep two representations alive; it
 -- only tells a reader which migration path to take.
 data OpenApiMajorVersion = OpenApi30 | OpenApi31
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Classify an 'OpenApiSpecVersion' as 3.0.x or 3.1.x (anything @>= 3.1@ is treated
 -- as 3.1).
@@ -162,7 +162,7 @@ data Info = Info
     -- OpenAPI Specification version or the API implementation version).
     _infoVersion :: Text
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Contact information for the exposed API.
 data Contact = Contact
@@ -173,7 +173,7 @@ data Contact = Contact
     -- | The email address of the contact person/organization.
     _contactEmail :: Maybe Text
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | License information for the exposed API.
 data License = License
@@ -191,7 +191,7 @@ data License = License
     -- | A URL to the license used for the API.
     _licenseUrl :: Maybe URL
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 instance IsString License where
   fromString s = License (fromString s) Nothing Nothing
@@ -210,7 +210,7 @@ data Server = Server
     -- The value is used for substitution in the server's URL template.
     _serverVariables :: InsOrdHashMap Text ServerVariable
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | A variable substituted into a 'Server' URL template, as described by the
 -- OpenAPI Server Variable Object.
@@ -228,7 +228,7 @@ data ServerVariable = ServerVariable
     -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
     _serverVariableDescription :: Maybe Text
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 instance IsString Server where
   fromString s = Server (fromString s) Nothing mempty
@@ -247,7 +247,7 @@ data Components = Components
     _componentsLinks :: Definitions Link,
     _componentsCallbacks :: Definitions Callback
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Describes the operations available on a single path.
 -- A @'PathItem'@ may be empty, due to ACL constraints.
@@ -287,7 +287,7 @@ data PathItem = PathItem
     -- A unique parameter is defined by a combination of a name and location.
     _pathItemParameters :: [Referenced Param]
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Describes a single API operation on a path.
 data Operation = Operation
@@ -342,7 +342,7 @@ data Operation = Operation
     -- it will be overridden by this value.
     _operationServers :: [Server]
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- This instance should be in @http-media@.
 instance Data MediaType where
@@ -377,7 +377,7 @@ data RequestBody = RequestBody
     -- Defaults to 'False'.
     _requestBodyRequired :: Maybe Bool
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Each Media Type Object provides schema and examples for the media type identified by its key.
 data MediaTypeObject = MediaTypeObject
@@ -394,7 +394,7 @@ data MediaTypeObject = MediaTypeObject
     -- is @multipart@ or @application/x-www-form-urlencoded@.
     _mediaTypeObjectEncoding :: InsOrdHashMap Text Encoding
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | In order to support common ways of serializing simple parameters, a set of style values are defined.
 data Style
@@ -417,7 +417,7 @@ data Style
     StylePipeDelimited
   | -- | Provides a simple way of rendering nested objects using form parameters.
     StyleDeepObject
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | A single encoding definition applied to a request-body property, as
 -- described by the OpenAPI Encoding Object (used inside 'MediaTypeObject').
@@ -456,12 +456,13 @@ data Encoding = Encoding
     -- is not @application/x-www-form-urlencoded@.
     _encodingAllowReserved :: Maybe Bool
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | A list of media types, used wherever the spec lists @produces@/@consumes@-style
 -- content types.
 newtype MimeList = MimeList {getMimeList :: [MediaType]}
-  deriving (Eq, Show, Semigroup, Monoid, Typeable)
+  deriving stock (Eq, Show, Typeable)
+  deriving newtype (Semigroup, Monoid)
 
 mimeListConstr :: Constr
 mimeListConstr = mkConstr mimeListDataType "MimeList" ["getMimeList"] Prefix
@@ -535,7 +536,7 @@ data Param = Param
     -- _paramContent :: InsOrdHashMap MediaType MediaTypeObject
     -- should be singleton. mutually exclusive with _paramSchema.
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | An example value for a media type, parameter, or header, as described by
 -- the OpenAPI Example Object.
@@ -557,12 +558,12 @@ data Example = Example
     -- and '_exampleExternalValue' field are mutually exclusive.
     _exampleExternalValue :: Maybe URL
   }
-  deriving (Eq, Show, Generic, Typeable, Data)
+  deriving stock (Eq, Show, Generic, Typeable, Data)
 
 data ExpressionOrValue
   = Expression Text
   | Value Value
-  deriving (Eq, Show, Generic, Typeable, Data)
+  deriving stock (Eq, Show, Generic, Typeable, Data)
 
 -- | The Link object represents a possible design-time link for a response.
 -- The presence of a link does not guarantee the caller's ability to successfully invoke it,
@@ -589,7 +590,7 @@ data Link = Link
     -- | A server object to be used by the target operation.
     _linkServer :: Maybe Server
   }
-  deriving (Eq, Show, Generic, Typeable, Data)
+  deriving stock (Eq, Show, Generic, Typeable, Data)
 
 -- | The @items@ keyword. In OpenAPI 3.1 / JSON Schema 2020-12, @items@ is a single
 -- schema or a boolean (@items: false@ means "no additional array items are allowed").
@@ -603,7 +604,7 @@ data Link = Link
 data OpenApiItems where
   OpenApiItemsObject :: Referenced Schema -> OpenApiItems
   OpenApiItemsBoolean :: Bool -> OpenApiItems
-  deriving (Eq, Show, Typeable, Data)
+  deriving stock (Eq, Show, Typeable, Data)
 
 -- | A single JSON Schema primitive type, i.e. one element of a schema's @type@
 -- keyword. Note 3.1 adds @"null"@ ('OpenApiNull'), used in type arrays to
@@ -616,7 +617,7 @@ data OpenApiType where
   OpenApiArray :: OpenApiType
   OpenApiNull :: OpenApiType
   OpenApiObject :: OpenApiType
-  deriving (Eq, Show, Typeable, Generic, Data)
+  deriving stock (Eq, Show, Typeable, Generic, Data)
 
 -- | The value of a schema's @type@ keyword. In OpenAPI 3.1 / JSON Schema 2020-12,
 -- @type@ may be a single type (@"string"@) or an array of types (@["string","null"]@,
@@ -624,7 +625,7 @@ data OpenApiType where
 data OpenApiTypeValue
   = OpenApiTypeSingle OpenApiType
   | OpenApiTypeArray [OpenApiType]
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Extract a single type if the @type@ value is a single type (not an array).
 -- Returns 'Nothing' for a type array.
@@ -645,7 +646,7 @@ data ParamLocation
     ParamPath
   | -- | Used to pass a specific cookie value to the API.
     ParamCookie
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | The @format@ modifier of a schema or parameter (e.g. @"date-time"@,
 -- @"int64"@). Open-ended free-form text per JSON Schema.
@@ -723,7 +724,7 @@ data Schema = Schema
     _schemaDynamicRef :: Maybe Text,
     _schemaDynamicAnchor :: Maybe Text
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 {-# DEPRECATED _schemaExample "Use _schemaExamples (JSON Schema examples) in OpenAPI 3.1" #-}
 
@@ -739,7 +740,7 @@ data Discriminator = Discriminator
     -- | An object to hold mappings between payload values and schema names or references.
     _discriminatorMapping :: InsOrdHashMap Text Text
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | A @'Schema'@ with an optional name.
 -- This name can be used in references.
@@ -747,7 +748,7 @@ data NamedSchema = NamedSchema
   { _namedSchemaName :: Maybe Text,
     _namedSchemaSchema :: Schema
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Metadata for fine-tuning the XML representation of a schema, as described
 -- by the OpenAPI XML Object.
@@ -774,7 +775,7 @@ data Xml = Xml
     -- The definition takes effect only when defined alongside type being array (outside the items).
     _xmlWrapped :: Maybe Bool
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | A container for the expected responses of an operation.
 -- The container maps a HTTP response code to the expected response.
@@ -789,7 +790,7 @@ data Responses = Responses
     -- Describes the expected response for those HTTP status codes.
     _responsesResponses :: InsOrdHashMap HttpStatusCode (Referenced Response)
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | An HTTP status code keying an entry in 'Responses' (e.g. @200@, @404@).
 type HttpStatusCode = Int
@@ -811,7 +812,7 @@ data Response = Response
     -- constraints of the names for @'Components'@ Objects.
     _responseLinks :: InsOrdHashMap Text (Referenced Link)
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 instance IsString Response where
   fromString s = Response (fromString s) mempty mempty mempty
@@ -822,7 +823,7 @@ instance IsString Response where
 -- The key value used to identify the path item object is an expression, evaluated at runtime,
 -- that identifies a URL to use for the callback operation.
 newtype Callback = Callback (InsOrdHashMap Text PathItem)
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | The name of a response 'Header'.
 type HeaderName = Text
@@ -841,14 +842,14 @@ data Header = Header
     _headerExamples :: InsOrdHashMap Text (Referenced Example),
     _headerSchema :: Maybe (Referenced Schema)
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | The location of the API key.
 data ApiKeyLocation
   = ApiKeyQuery
   | ApiKeyHeader
   | ApiKeyCookie
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Configuration for an @apiKey@ 'SecurityScheme': the name and location of
 -- the key.
@@ -858,7 +859,7 @@ data ApiKeyParams = ApiKeyParams
     -- | The location of the API key.
     _apiKeyIn :: ApiKeyLocation
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | The authorization URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
 type AuthorizationURL = Text
@@ -869,24 +870,24 @@ type TokenURL = Text
 -- | Flow-specific parameters for the OAuth2 implicit flow.
 newtype OAuth2ImplicitFlow
   = OAuth2ImplicitFlow {_oAuth2ImplicitFlowAuthorizationUrl :: AuthorizationURL}
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Flow-specific parameters for the OAuth2 resource-owner password flow.
 newtype OAuth2PasswordFlow
   = OAuth2PasswordFlow {_oAuth2PasswordFlowTokenUrl :: TokenURL}
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Flow-specific parameters for the OAuth2 client-credentials flow.
 newtype OAuth2ClientCredentialsFlow
   = OAuth2ClientCredentialsFlow {_oAuth2ClientCredentialsFlowTokenUrl :: TokenURL}
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Flow-specific parameters for the OAuth2 authorization-code flow.
 data OAuth2AuthorizationCodeFlow = OAuth2AuthorizationCodeFlow
   { _oAuth2AuthorizationCodeFlowAuthorizationUrl :: AuthorizationURL,
     _oAuth2AuthorizationCodeFlowTokenUrl :: TokenURL
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | A single OAuth2 flow, as described by the OpenAPI OAuth Flow Object. The
 -- flow-specific parameters @p@ are one of the @OAuth2*Flow@ types above.
@@ -899,7 +900,7 @@ data OAuth2Flow p = OAuth2Flow
     -- The map MAY be empty.
     _oAuth2Scopes :: InsOrdHashMap Text Text
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | The set of OAuth2 flows supported by a 'SecurityScheme', as described by
 -- the OpenAPI OAuth Flows Object. Each flow is optional.
@@ -913,7 +914,7 @@ data OAuth2Flows = OAuth2Flows
     -- | Configuration for the OAuth Authorization Code flow
     _oAuth2FlowsAuthorizationCode :: Maybe (OAuth2Flow OAuth2AuthorizationCodeFlow)
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 type BearerFormat = Text
 
@@ -923,7 +924,7 @@ data HttpSchemeType
   = HttpSchemeBearer (Maybe BearerFormat)
   | HttpSchemeBasic
   | HttpSchemeCustom Text
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- |
 --
@@ -963,7 +964,7 @@ data SecuritySchemeType
   | SecuritySchemeApiKey ApiKeyParams
   | SecuritySchemeOAuth2 OAuth2Flows
   | SecuritySchemeOpenIdConnect URL
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Defines a security scheme that can be used by an operation, as described by
 -- the OpenAPI Security Scheme Object.
@@ -973,12 +974,12 @@ data SecurityScheme = SecurityScheme
     -- | A short description for security scheme.
     _securitySchemeDescription :: Maybe Text
   }
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | The named 'SecurityScheme' definitions held under @components.securitySchemes@.
 newtype SecurityDefinitions
   = SecurityDefinitions (Definitions SecurityScheme)
-  deriving (Eq, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
@@ -986,7 +987,8 @@ newtype SecurityDefinitions
 newtype SecurityRequirement = SecurityRequirement
   { getSecurityRequirement :: InsOrdHashMap Text [Text]
   }
-  deriving (Eq, Read, Show, Semigroup, Monoid, ToJSON, FromJSON, Data, Typeable)
+  deriving stock (Eq, Read, Show, Data, Typeable)
+  deriving newtype (Semigroup, Monoid, ToJSON, FromJSON)
 
 -- | Tag name.
 type TagName = Text
@@ -1002,7 +1004,7 @@ data Tag = Tag
     -- | Additional external documentation for this tag.
     _tagExternalDocs :: Maybe ExternalDocs
   }
-  deriving (Eq, Ord, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Ord, Show, Generic, Data, Typeable)
 
 instance Hashable Tag
 
@@ -1017,14 +1019,14 @@ data ExternalDocs = ExternalDocs
     -- | The URL for the target documentation.
     _externalDocsUrl :: URL
   }
-  deriving (Eq, Ord, Show, Generic, Data, Typeable)
+  deriving stock (Eq, Ord, Show, Generic, Data, Typeable)
 
 instance Hashable ExternalDocs
 
 -- | A simple object to allow referencing other definitions in the specification.
 -- It can be used to reference parameters and responses that are defined at the top level for reuse.
 newtype Reference = Reference {getReference :: Text}
-  deriving (Eq, Show, Data, Typeable)
+  deriving stock (Eq, Show, Data, Typeable)
 
 -- | Either an inline value of type @a@ or a 'Reference' to one declared
 -- elsewhere (e.g. under @components@). Most spec fields that may be reused are
@@ -1032,13 +1034,15 @@ newtype Reference = Reference {getReference :: Text}
 data Referenced a
   = Ref Reference
   | Inline a
-  deriving (Eq, Show, Functor, Data, Typeable)
+  deriving stock (Eq, Show, Functor, Data, Typeable)
 
 instance (IsString a) => IsString (Referenced a) where
   fromString = Inline . fromString
 
 -- | A URL string, used for links, terms of service, external docs, and the like.
-newtype URL = URL {getUrl :: Text} deriving (Eq, Ord, Show, Hashable, ToJSON, FromJSON, Data, Typeable)
+newtype URL = URL {getUrl :: Text}
+  deriving stock (Eq, Ord, Show, Data, Typeable)
+  deriving newtype (Hashable, ToJSON, FromJSON)
 
 -- | A schema's @additionalProperties@: either a boolean allowing or forbidding
 -- properties beyond those listed, or a 'Schema' every additional property must
@@ -1046,9 +1050,9 @@ newtype URL = URL {getUrl :: Text} deriving (Eq, Ord, Show, Hashable, ToJSON, Fr
 data AdditionalProperties
   = AdditionalPropertiesAllowed Bool
   | AdditionalPropertiesSchema (Referenced Schema)
-  deriving (Eq, Show, Data, Typeable)
+  deriving stock (Eq, Show, Data, Typeable)
 
-newtype OpenApiSpecVersion = OpenApiSpecVersion {getVersion :: Version} deriving (Eq, Show, Generic, Data, Typeable)
+newtype OpenApiSpecVersion = OpenApiSpecVersion {getVersion :: Version} deriving stock (Eq, Show, Generic, Data, Typeable)
 
 -------------------------------------------------------------------------------
 -- Generic instances
@@ -1253,7 +1257,7 @@ instance OpenApiMonoid OpenApiSpecVersion
 
 instance OpenApiMonoid MimeList
 
-deriving instance OpenApiMonoid URL
+deriving newtype instance OpenApiMonoid URL
 
 instance OpenApiMonoid OpenApiType where
   openApiMempty = OpenApiString
