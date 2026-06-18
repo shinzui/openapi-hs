@@ -64,15 +64,15 @@ spec = do
     prop "TL.Text" $ shouldValidate (Proxy :: Proxy TL.Text)
     prop "[String]" $ shouldValidate (Proxy :: Proxy [String])
     -- prop "(Maybe [Int])" $ shouldValidate (Proxy :: Proxy (Maybe [Int]))
-    -- TODO(EP-4): heterogeneous tuples collapse to a oneOf `items` element under
-    -- EP-3 (no prefixItems yet), so the generator cannot reconstruct positional
-    -- types and these round-trips can't hold until prefixItems lands.
-    xprop "(IntMap String)" $ shouldValidate (Proxy :: Proxy (IntMap String))
+    -- Heterogeneous tuples (and @IntMap@, which derives via @[(Int, a)]@) derive to
+    -- positional @prefixItems@ + @items: false@, so the generator reconstructs each
+    -- member's type and these round-trips hold.
+    prop "(IntMap String)" $ shouldValidate (Proxy :: Proxy (IntMap String))
     prop "(Set Bool)" $ shouldValidate (Proxy :: Proxy (Set Bool))
     prop "(NonEmpty Bool)" $ shouldValidate (Proxy :: Proxy (NonEmpty Bool))
     prop "(HashSet Bool)" $ shouldValidate (Proxy :: Proxy (HashSet Bool))
     prop "(Either Int String)" $ shouldValidate (Proxy :: Proxy (Either Int String))
-    xprop "(Int, String)" $ shouldValidate (Proxy :: Proxy (Int, String)) -- TODO(EP-4): prefixItems
+    prop "(Int, String)" $ shouldValidate (Proxy :: Proxy (Int, String))
     prop "(Map String Int)" $ shouldValidate (Proxy :: Proxy (Map String Int))
     prop "(Map T.Text Int)" $ shouldValidate (Proxy :: Proxy (Map T.Text Int))
     prop "(Map TL.Text Bool)" $ shouldValidate (Proxy :: Proxy (Map TL.Text Bool))
@@ -80,10 +80,9 @@ spec = do
     prop "(HashMap T.Text Int)" $ shouldValidate (Proxy :: Proxy (HashMap T.Text Int))
     prop "(HashMap TL.Text Bool)" $ shouldValidate (Proxy :: Proxy (HashMap TL.Text Bool))
     prop "Object" $ shouldValidate (Proxy :: Proxy Object)
-    -- TODO(EP-4): see note above — positional tuples need prefixItems.
-    xprop "(Int, String, Double)" $ shouldValidate (Proxy :: Proxy (Int, String, Double))
-    xprop "(Int, String, Double, [Int])" $ shouldValidate (Proxy :: Proxy (Int, String, Double, [Int]))
-    xprop "(Int, String, Double, [Int], Int)" $ shouldValidate (Proxy :: Proxy (Int, String, Double, [Int], Int))
+    prop "(Int, String, Double)" $ shouldValidate (Proxy :: Proxy (Int, String, Double))
+    prop "(Int, String, Double, [Int])" $ shouldValidate (Proxy :: Proxy (Int, String, Double, [Int]))
+    prop "(Int, String, Double, [Int], Int)" $ shouldValidate (Proxy :: Proxy (Int, String, Double, [Int], Int))
   describe "Invalid FromJSON validation" $ do
     prop "WrongType" $ shouldNotValidate (Proxy :: Proxy WrongType)
     prop "MissingRequired" $ shouldNotValidate (Proxy :: Proxy MissingRequired)

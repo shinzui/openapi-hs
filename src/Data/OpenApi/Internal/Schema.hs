@@ -354,7 +354,7 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
 --         "Jack",
 --         25
 --     ],
---     "items": [
+--     "prefixItems": [
 --         {
 --             "type": "string"
 --         },
@@ -399,12 +399,18 @@ sketchSchema = sketch . toJSON
     go (String _) = mempty & type_ ?~ OpenApiTypeSingle OpenApiString
     go (Number _) = mempty & type_ ?~ OpenApiTypeSingle OpenApiNumber
     go (Array xs) =
-      mempty
-        & type_ ?~ OpenApiTypeSingle OpenApiArray
-        & items ?~ case ischema of
-          Just s -> OpenApiItemsObject (Inline s)
-          -- heterogeneous array: collapse to an anyOf element schema (TODO(EP-4): prefixItems)
-          _ -> OpenApiItemsObject (Inline (mempty & anyOf ?~ map Inline ys))
+      case ischema of
+        -- homogeneous array: a single @items@ element schema describes every member.
+        Just s ->
+          mempty
+            & type_ ?~ OpenApiTypeSingle OpenApiArray
+            & items ?~ OpenApiItemsObject (Inline s)
+        -- heterogeneous array: positional @prefixItems@ (JSON Schema 2020-12 tuple).
+        -- Trailing elements are left unconstrained, matching the unrestrictive intent.
+        Nothing ->
+          mempty
+            & type_ ?~ OpenApiTypeSingle OpenApiArray
+            & prefixItems ?~ map Inline ys
       where
         ys = map go (V.toList xs)
         allSame = and ((zipWith (==)) ys (tail ys))
@@ -441,7 +447,10 @@ sketchSchema = sketch . toJSON
 --             3
 --         ]
 --     ],
---     "items": [
+--     "items": false,
+--     "maxItems": 3,
+--     "minItems": 3,
+--     "prefixItems": [
 --         {
 --             "enum": [
 --                 1
@@ -470,8 +479,6 @@ sketchSchema = sketch . toJSON
 --             "type": "number"
 --         }
 --     ],
---     "maxItems": 3,
---     "minItems": 3,
 --     "type": "array",
 --     "uniqueItems": true
 -- }
@@ -484,7 +491,10 @@ sketchSchema = sketch . toJSON
 --             25
 --         ]
 --     ],
---     "items": [
+--     "items": false,
+--     "maxItems": 2,
+--     "minItems": 2,
+--     "prefixItems": [
 --         {
 --             "enum": [
 --                 "Jack"
@@ -504,8 +514,6 @@ sketchSchema = sketch . toJSON
 --             "type": "number"
 --         }
 --     ],
---     "maxItems": 2,
---     "minItems": 2,
 --     "type": "array",
 --     "uniqueItems": true
 -- }
@@ -575,7 +583,10 @@ sketchStrictSchema = go . toJSON
         & type_ ?~ OpenApiTypeSingle OpenApiArray
         & maxItems ?~ fromIntegral sz
         & minItems ?~ fromIntegral sz
-        & items ?~ OpenApiItemsObject (Inline (mempty & anyOf ?~ map (Inline . go) (V.toList xs)))
+        -- Restrictive tuple: each element pinned positionally via @prefixItems@,
+        -- with @items: false@ forbidding any element beyond the fixed length.
+        & prefixItems ?~ map (Inline . go) (V.toList xs)
+        & items ?~ OpenApiItemsBoolean False
         & uniqueItems ?~ allUnique
         & enum_ ?~ [js]
       where
@@ -1016,9 +1027,11 @@ instance (Selector s, GToSchema f, GToSchema (S1 s f)) => GToSchema (C1 c (S1 s 
   gdeclareNamedSchema opts _ s
     | unwrapUnaryRecords opts = fieldSchema
     | otherwise =
-        case schema ^. items of
-          Just (OpenApiItemsObject (Inline s))
-            | Just [_] <- s ^. anyOf -> fieldSchema
+        case schema ^. prefixItems of
+          -- A single-field non-record constructor was treated as a 1-tuple
+          -- (one @prefixItems@ entry); unwrap it to the field's own schema, since
+          -- aeson encodes such a constructor as the bare value, not a 1-element array.
+          Just [_] -> fieldSchema
           _ -> do
             -- We have to run recordSchema instead of just using its defs,
             -- since those can be recursive and will lead to infinite loop,
@@ -1049,21 +1062,6 @@ gdeclareSchemaRef opts proxy = do
       return $ Ref (Reference name)
     _ -> Inline <$> gdeclareSchema opts proxy
 
--- | Accumulate tuple-member schemas into a single @items@ object whose element
--- schema is the @anyOf@ of the members (with @minItems@/@maxItems@ tracked by the
--- caller). This is the conservative 3.1 representation of a tuple under Strategy A:
--- "an array of N elements, each of which is one of the member types". @anyOf@ (not
--- @oneOf@) is required because member types can overlap (e.g. Integer and Number),
--- which would make @oneOf@ reject a valid integer for matching more than one branch.
--- TODO(EP-4): switch tuple derivation to @prefixItems@ for true positional validation.
-appendItem :: Referenced Schema -> Maybe OpenApiItems -> Maybe OpenApiItems
-appendItem x Nothing =
-  Just (OpenApiItemsObject (Inline (mempty & anyOf ?~ [x])))
-appendItem x (Just (OpenApiItemsObject (Inline s))) =
-  Just (OpenApiItemsObject (Inline (s & anyOf %~ Just . maybe [x] (++ [x]))))
-appendItem _ (Just _) =
-  error "GToSchema.appendItem: cannot append to a non-tuple items value"
-
 withFieldSchema ::
   forall proxy s f.
   (Selector s, GToSchema f) =>
@@ -1073,9 +1071,14 @@ withFieldSchema opts _ isRequiredField schema = do
   return
     $ if T.null fname
       then
+        -- Positional tuple (unnamed product field): accumulate each member schema
+        -- into @prefixItems@ and forbid trailing elements with @items: false@. This
+        -- is the JSON Schema 2020-12 tuple form, so positional type information is
+        -- preserved for validation and round-tripping.
         schema
           & type_ ?~ OpenApiTypeSingle OpenApiArray
-          & items %~ appendItem ref
+          & prefixItems %~ Just . maybe [ref] (++ [ref])
+          & items ?~ OpenApiItemsBoolean False
           & maxItems %~ Just . maybe 1 (+ 1) -- increment maxItems
           & minItems %~ Just . maybe 1 (+ 1) -- increment minItems
       else

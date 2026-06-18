@@ -64,6 +64,25 @@ schemaGen defns schema =
       | otherwise -> Number . fromInteger <$> arbitrary
     Just OpenApiArray
       | Just 0 <- schema ^. maxLength -> pure $ Array V.empty
+      | Just prefixSchemas <- schema ^. prefixItems -> do
+          -- 3.1 tuple: generate one element positionally per prefix schema, then
+          -- any trailing elements permitted by `items` (for the generic tuple
+          -- derivation `items` is false, so there are none).
+          let prefixLen = length prefixSchemas
+          prefixVals <- traverse (schemaGen defns . dereference defns) prefixSchemas
+          trailing <- case schema ^. items of
+            Just (OpenApiItemsObject ref) -> do
+              size <- getSize
+              let itemSchema = dereference defns ref
+                  minLength' = fromMaybe prefixLen $ fromInteger <$> schema ^. minItems
+                  maxLength' = fromMaybe (prefixLen + size) $ fromInteger <$> schema ^. maxItems
+                  minTrail = max 0 (minLength' - prefixLen)
+                  maxTrail = max minTrail (maxLength' - prefixLen)
+              n <- choose (minTrail, maxTrail)
+              vectorOf n $ schemaGen defns itemSchema
+            -- items: false (or absent) -> no elements beyond the prefix.
+            _ -> pure []
+          return . Array . V.fromList $ prefixVals ++ trailing
       | Just items <- schema ^. items ->
           case items of
             OpenApiItemsObject ref -> do

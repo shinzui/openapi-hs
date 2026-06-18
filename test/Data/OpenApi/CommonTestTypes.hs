@@ -510,24 +510,20 @@ data ISPair = ISPair Integer String
 
 instance ToSchema ISPair
 
--- Under OpenAPI 3.1 (Strategy A), the old tuple @items: [..]@ array is not
--- representable; EP-3 conservatively collapses tuple derivation to a single
--- @items@ object whose element is the @anyOf@ of the members (@anyOf@ rather than
--- @oneOf@ so overlapping member types like Integer/Number still validate).
--- TODO(EP-4): switch tuple derivation to @prefixItems@ and restore positional shape.
+-- Under OpenAPI 3.1, a positional tuple derives to @prefixItems@ (one schema per
+-- member, positionally) plus @items: false@ to forbid trailing elements. This is
+-- the JSON Schema 2020-12 tuple form, preserving each member's type for validation.
 ispairSchemaJSON :: Value
 ispairSchemaJSON =
   [aesonQQ|
 {
   "type": "array",
-  "items":
-    {
-      "anyOf":
-        [
-          { "type": "integer" },
-          { "type": "string"  }
-        ]
-    },
+  "prefixItems":
+    [
+      { "type": "integer" },
+      { "type": "string"  }
+    ],
+  "items": false,
   "minItems": 2,
   "maxItems": 2
 }

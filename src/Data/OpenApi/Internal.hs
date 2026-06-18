@@ -599,8 +599,8 @@ data Link = Link
 --
 -- @'OpenApiItemsBoolean'@ specifies @items: true@ or @items: false@.
 --
--- Tuple validation (the old @items: [schema, ...]@ array form) moved to @prefixItems@,
--- added in a later plan. TODO(EP-4): re-introduce tuple support via @prefixItems@.
+-- Tuple validation (the old @items: [schema, ...]@ array form) is expressed via the
+-- separate @_schemaPrefixItems@ field (positional schemas) together with @items: false@.
 data OpenApiItems where
   OpenApiItemsObject :: Referenced Schema -> OpenApiItems
   OpenApiItemsBoolean :: Bool -> OpenApiItems

@@ -7,6 +7,8 @@
 - **Breaking:** `exclusiveMaximum`/`exclusiveMinimum` are now numeric (`Scientific`)
   and independent of `maximum`/`minimum`.
 - **Breaking:** removed the tuple `items` array; use `prefixItems` + `items: false`.
+  Generic `ToSchema` derivation for Haskell tuples (and `sketchSchema`/`sketchStrictSchema`)
+  now emits this positional `prefixItems` form, preserving each member's type.
 - Added JSON Schema 2020-12 fields: `prefixItems`, `const`, `if`/`then`/`else`,
   `contains`/`minContains`/`maxContains`, `unevaluatedProperties`/`unevaluatedItems`,
   `dependentSchemas`/`dependentRequired`, `propertyNames`, content keywords, `examples`,

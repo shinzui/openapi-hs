@@ -273,6 +273,13 @@ implementation.
   but did not rewire generic tuple `ToSchema` derivation to use it, nor un-pend the five props.
   The field now exists to support the switch; close this before/with the EP-7 release (or as a
   dedicated follow-up). Tracked here so it is not lost.
+  **RESOLVED (follow-up, 2026-06-18): DONE.** Generic tuple `ToSchema` derivation
+  (`withFieldSchema`/the removed `appendItem` in `src/Data/OpenApi/Internal/Schema.hs`) now emits
+  `prefixItems: [..]` + `items: false`; the single-field-constructor unwrap detection switched
+  from `items.anyOf` length-1 to `prefixItems` length-1; both `sketchSchema`/`sketchStrictSchema`
+  array helpers emit `prefixItems`; the `schemaGen` generator reconstructs positional tuples; the
+  `ISPair` golden was updated; and the five `GeneratorSpec` props are restored from `xprop` to
+  `prop` (all passing). The validator's `prefixItems` support (EP-6) was already in place.
 
 - **Discovery (EP-3 implementation, 2026-06-10): default OpenAPI version had to move to 3.1.0.**
   Beyond the version *bounds*, EP-3 bumped the `Monoid OpenApiSpecVersion` `mempty` and the
