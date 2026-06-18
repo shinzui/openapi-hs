@@ -13,130 +13,130 @@
 -- To bring an existing OpenAPI 3.0 document forward, rewrite the parsed JSON with
 -- the helpers in "Data.OpenApi.Migration" before decoding it into these 3.1 types
 -- (see @MIGRATION_3.0_TO_3.1.md@).
-module Data.OpenApi (
-  -- * How to use this library
-  -- $howto
+module Data.OpenApi
+  ( -- * How to use this library
+    -- $howto
 
-  -- ** @'Monoid'@ instances
-  -- $monoids
+    -- ** @'Monoid'@ instances
+    -- $monoids
 
-  -- ** Lenses and prisms
-  -- $lens
+    -- ** Lenses and prisms
+    -- $lens
 
-  -- ** Schema specification
-  -- $schema
+    -- ** Schema specification
+    -- $schema
 
-  -- ** Manipulation
-  -- $manipulation
+    -- ** Manipulation
+    -- $manipulation
 
-  -- ** Validation
-  -- $validation
+    -- ** Validation
+    -- $validation
 
-  -- * Re-exports
-  module Data.OpenApi.Lens,
-  module Data.OpenApi.Optics,
-  module Data.OpenApi.Operation,
-  module Data.OpenApi.ParamSchema,
-  module Data.OpenApi.Schema,
-  module Data.OpenApi.Schema.Validation,
+    -- * Re-exports
+    module Data.OpenApi.Lens,
+    module Data.OpenApi.Optics,
+    module Data.OpenApi.Operation,
+    module Data.OpenApi.ParamSchema,
+    module Data.OpenApi.Schema,
+    module Data.OpenApi.Schema.Validation,
 
-  -- * OpenAPI specification
-  OpenApi(..),
-  OpenApiMajorVersion(..),
-  detectVersion,
-  Server(..),
-  ServerVariable(..),
-  Components(..),
+    -- * OpenAPI specification
+    OpenApi (..),
+    OpenApiMajorVersion (..),
+    detectVersion,
+    Server (..),
+    ServerVariable (..),
+    Components (..),
 
-  -- ** Info types
-  Info(..),
-  Contact(..),
-  License(..),
+    -- ** Info types
+    Info (..),
+    Contact (..),
+    License (..),
 
-  -- ** PathItem
-  PathItem(..),
+    -- ** PathItem
+    PathItem (..),
 
-  -- ** Operations
-  Operation(..),
-  Tag(..),
-  TagName,
+    -- ** Operations
+    Operation (..),
+    Tag (..),
+    TagName,
 
-  -- ** Types and formats
-  OpenApiType(..),
-  OpenApiTypeValue(..),
-  singleType,
-  Format,
-  Definitions,
-  Style(..),
+    -- ** Types and formats
+    OpenApiType (..),
+    OpenApiTypeValue (..),
+    singleType,
+    Format,
+    Definitions,
+    Style (..),
 
-  -- ** Parameters
-  Param(..),
-  ParamLocation(..),
-  ParamName,
-  Header(..),
-  HeaderName,
-  Example(..),
-  RequestBody(..),
-  MediaTypeObject(..),
-  Encoding(..),
+    -- ** Parameters
+    Param (..),
+    ParamLocation (..),
+    ParamName,
+    Header (..),
+    HeaderName,
+    Example (..),
+    RequestBody (..),
+    MediaTypeObject (..),
+    Encoding (..),
 
-  -- ** Schemas
-  Schema(..),
-  NamedSchema(..),
-  OpenApiItems(..),
-  Xml(..),
-  Pattern,
-  AdditionalProperties(..),
-  Discriminator(..),
+    -- ** Schemas
+    Schema (..),
+    NamedSchema (..),
+    OpenApiItems (..),
+    Xml (..),
+    Pattern,
+    AdditionalProperties (..),
+    Discriminator (..),
 
-  -- ** Responses
-  Responses(..),
-  Response(..),
-  HttpStatusCode,
-  Link(..),
-  Callback(..),
+    -- ** Responses
+    Responses (..),
+    Response (..),
+    HttpStatusCode,
+    Link (..),
+    Callback (..),
 
-  -- ** Security
-  SecurityScheme(..),
-  SecuritySchemeType(..),
-  HttpSchemeType(..),
-  SecurityDefinitions(..),
-  SecurityRequirement(..),
+    -- ** Security
+    SecurityScheme (..),
+    SecuritySchemeType (..),
+    HttpSchemeType (..),
+    SecurityDefinitions (..),
+    SecurityRequirement (..),
 
-  -- *** API key
-  ApiKeyParams(..),
-  ApiKeyLocation(..),
+    -- *** API key
+    ApiKeyParams (..),
+    ApiKeyLocation (..),
 
-  -- *** OAuth2
-  OAuth2Flows(..),
-  OAuth2Flow(..),
-  OAuth2ImplicitFlow(..),
-  OAuth2PasswordFlow(..),
-  OAuth2ClientCredentialsFlow(..),
-  OAuth2AuthorizationCodeFlow(..),
-  AuthorizationURL,
-  TokenURL,
+    -- *** OAuth2
+    OAuth2Flows (..),
+    OAuth2Flow (..),
+    OAuth2ImplicitFlow (..),
+    OAuth2PasswordFlow (..),
+    OAuth2ClientCredentialsFlow (..),
+    OAuth2AuthorizationCodeFlow (..),
+    AuthorizationURL,
+    TokenURL,
 
-  -- ** External documentation
-  ExternalDocs(..),
+    -- ** External documentation
+    ExternalDocs (..),
 
-  -- ** References
-  Reference(..),
-  Referenced(..),
+    -- ** References
+    Reference (..),
+    Referenced (..),
 
-  -- ** Miscellaneous
-  MimeList(..),
-  URL(..),
-) where
+    -- ** Miscellaneous
+    MimeList (..),
+    URL (..),
+  )
+where
 
+import Data.OpenApi.Internal
 import Data.OpenApi.Lens
-import Data.OpenApi.Optics ()
 import Data.OpenApi.Operation
+import Data.OpenApi.Optics ()
 import Data.OpenApi.ParamSchema
 import Data.OpenApi.Schema
 import Data.OpenApi.Schema.Validation
-
-import Data.OpenApi.Internal
 
 -- $setup
 -- >>> import Control.Lens

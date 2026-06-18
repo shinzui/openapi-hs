@@ -1,51 +1,50 @@
-{-# LANGUAGE CPP                 #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE PackageImports      #-}
-{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Data.OpenApi.Schema.ValidationSpec where
 
-import           Control.Applicative
-import           Control.Lens                        ((&), (.~), (?~))
-import           Data.Aeson
+import Control.Applicative
+import Control.Lens ((&), (.~), (?~))
+import Data.Aeson
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 #endif
-import           Data.Aeson.Types
-import           Data.Hashable                       (Hashable)
-import           Data.HashMap.Strict                 (HashMap)
-import qualified Data.HashMap.Strict                 as HashMap
-import           "unordered-containers" Data.HashSet (HashSet)
-import qualified "unordered-containers" Data.HashSet as HashSet
-import           Data.Int
-import           Data.IntMap                         (IntMap)
-import           Data.List.NonEmpty.Compat           (NonEmpty (..), nonEmpty)
-import           Data.Map                            (Map, fromList)
-import           Data.Monoid                         (mempty)
-import           Data.Proxy
-import           Data.Set                            (Set)
-import qualified Data.Text                           as T
-import qualified Data.Text.Lazy                      as TL
-import           Data.Time
-import           Data.Version                        (Version)
-import           Data.Word
-import           GHC.Generics
-
-import           Data.OpenApi
-import           Data.OpenApi.Declare
-import           Data.OpenApi.Aeson.Compat (stringToKey)
-
-import           Test.Hspec
-import           Test.Hspec.QuickCheck
-import           Test.QuickCheck
-import           Test.QuickCheck.Instances           ()
+import Data.Aeson.Types
+import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
+import Data.Hashable (Hashable)
+import Data.Int
+import Data.IntMap (IntMap)
+import Data.List.NonEmpty.Compat (NonEmpty (..), nonEmpty)
+import Data.Map (Map, fromList)
+import Data.Monoid (mempty)
+import Data.OpenApi
+import Data.OpenApi.Aeson.Compat (stringToKey)
+import Data.OpenApi.Declare
+import Data.Proxy
+import Data.Set (Set)
+import Data.Text qualified as T
+import Data.Text.Lazy qualified as TL
+import Data.Time
+import Data.Version (Version)
+import Data.Word
+import GHC.Generics
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck
+import Test.QuickCheck.Instances ()
+import "unordered-containers" Data.HashSet (HashSet)
+import "unordered-containers" Data.HashSet qualified as HashSet
 
 shouldValidate :: (ToJSON a, ToSchema a) => Proxy a -> a -> Bool
 shouldValidate _ x = validateToJSON x == []
 
-shouldNotValidate :: forall a. ToSchema a => (a -> Value) -> a -> Bool
+shouldNotValidate :: forall a. (ToSchema a) => (a -> Value) -> a -> Bool
 shouldNotValidate f = not . null . validateJSON defs sch . f
   where
     (defs, sch) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
@@ -104,11 +103,11 @@ spec = do
     prop "FreeForm" $ shouldValidate (Proxy :: Proxy FreeForm)
 
   describe "invalid cases" $ do
-    prop "invalidPersonToJSON"        $ shouldNotValidate invalidPersonToJSON
-    prop "invalidColorToJSON"         $ shouldNotValidate invalidColorToJSON
-    prop "invalidPaintToJSON"         $ shouldNotValidate invalidPaintToJSON
-    prop "invalidLightToJSON"         $ shouldNotValidate invalidLightToJSON
-    prop "invalidButtonImagesToJSON"  $ shouldNotValidate invalidButtonImagesToJSON
+    prop "invalidPersonToJSON" $ shouldNotValidate invalidPersonToJSON
+    prop "invalidColorToJSON" $ shouldNotValidate invalidColorToJSON
+    prop "invalidPaintToJSON" $ shouldNotValidate invalidPaintToJSON
+    prop "invalidLightToJSON" $ shouldNotValidate invalidLightToJSON
+    prop "invalidButtonImagesToJSON" $ shouldNotValidate invalidButtonImagesToJSON
 
 main :: IO ()
 main = hspec spec
@@ -117,23 +116,26 @@ main = hspec spec
 -- Person (simple record with optional fields)
 -- ========================================================================
 data Person = Person
-  { name  :: String
-  , phone :: Integer
-  , email :: Maybe String
-  } deriving (Show, Generic)
+  { name :: String,
+    phone :: Integer,
+    email :: Maybe String
+  }
+  deriving (Show, Generic)
 
 instance ToJSON Person
+
 instance ToSchema Person
 
 instance Arbitrary Person where
   arbitrary = Person <$> arbitrary <*> arbitrary <*> arbitrary
 
 invalidPersonToJSON :: Person -> Value
-invalidPersonToJSON Person{..} = object
-  [ stringToKey "personName"  .= toJSON name
-  , stringToKey "personPhone" .= toJSON phone
-  , stringToKey "personEmail" .= toJSON email
-  ]
+invalidPersonToJSON Person {..} =
+  object
+    [ stringToKey "personName" .= toJSON name,
+      stringToKey "personPhone" .= toJSON phone,
+      stringToKey "personEmail" .= toJSON email
+    ]
 
 -- ========================================================================
 -- Color (enum)
@@ -141,24 +143,26 @@ invalidPersonToJSON Person{..} = object
 data Color = Red | Green | Blue deriving (Show, Generic, Bounded, Enum)
 
 instance ToJSON Color
+
 instance ToSchema Color
 
 instance Arbitrary Color where
   arbitrary = arbitraryBoundedEnum
 
 invalidColorToJSON :: Color -> Value
-invalidColorToJSON Red   = toJSON "red"
+invalidColorToJSON Red = toJSON "red"
 invalidColorToJSON Green = toJSON "green"
-invalidColorToJSON Blue  = toJSON "blue"
+invalidColorToJSON Blue = toJSON "blue"
 
 -- ========================================================================
 -- Paint (record with bounded enum property)
 -- ========================================================================
 
-newtype Paint = Paint { color :: Color }
+newtype Paint = Paint {color :: Color}
   deriving (Show, Generic)
 
 instance ToJSON Paint
+
 instance ToSchema Paint
 
 instance Arbitrary Paint where
@@ -172,21 +176,25 @@ invalidPaintToJSON = toJSON . color
 -- ========================================================================
 
 data MyRoseTree = MyRoseTree
-  { root  :: String
-  , trees :: [MyRoseTree]
-  } deriving (Show, Generic)
+  { root :: String,
+    trees :: [MyRoseTree]
+  }
+  deriving (Show, Generic)
 
 instance ToJSON MyRoseTree
 
 instance ToSchema MyRoseTree where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { datatypeNameModifier = drop (length "My") }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { datatypeNameModifier = drop (length "My")
+        }
 
 instance Arbitrary MyRoseTree where
   arbitrary = fmap (cut limit) $ MyRoseTree <$> arbitrary <*> (take limit <$> arbitrary)
     where
       limit = 4
-      cut 0 (MyRoseTree x _ ) = MyRoseTree x []
+      cut 0 (MyRoseTree x _) = MyRoseTree x []
       cut n (MyRoseTree x xs) = MyRoseTree x (map (cut (n - 1)) xs)
 
 -- ========================================================================
@@ -196,17 +204,18 @@ instance Arbitrary MyRoseTree where
 data Light = NoLight | LightFreq Double | LightColor Color deriving (Show, Generic)
 
 instance ToSchema Light where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions { Data.OpenApi.sumEncoding = ObjectWithSingleField }
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions {Data.OpenApi.sumEncoding = ObjectWithSingleField}
 
 instance ToJSON Light where
-  toJSON = genericToJSON defaultOptions { Data.Aeson.Types.sumEncoding = ObjectWithSingleField }
+  toJSON = genericToJSON defaultOptions {Data.Aeson.Types.sumEncoding = ObjectWithSingleField}
 
 instance Arbitrary Light where
-  arbitrary = oneof
-    [ return NoLight
-    , LightFreq <$> arbitrary
-    , LightColor <$> arbitrary
-    ]
+  arbitrary =
+    oneof
+      [ return NoLight,
+        LightFreq <$> arbitrary,
+        LightColor <$> arbitrary
+      ]
 
 invalidLightToJSON :: Light -> Value
 invalidLightToJSON = genericToJSON defaultOptions
@@ -217,11 +226,11 @@ newtype LightTaggedObject = LightTaggedObject Light
   deriving (Show)
 
 instance ToJSON LightTaggedObject where
-  toJSON (LightTaggedObject light) = genericToJSON defaultOptions { Data.Aeson.Types.sumEncoding = defaultTaggedObject } light
+  toJSON (LightTaggedObject light) = genericToJSON defaultOptions {Data.Aeson.Types.sumEncoding = defaultTaggedObject} light
 
 instance ToSchema LightTaggedObject where
   declareNamedSchema _ =
-    genericDeclareNamedSchema defaultSchemaOptions { Data.OpenApi.sumEncoding = defaultTaggedObject } (Proxy :: Proxy Light)
+    genericDeclareNamedSchema defaultSchemaOptions {Data.OpenApi.sumEncoding = defaultTaggedObject} (Proxy :: Proxy Light)
 
 instance Arbitrary LightTaggedObject where
   arbitrary = LightTaggedObject <$> arbitrary
@@ -230,11 +239,11 @@ newtype LightUntaggedValue = LightUntaggedValue Light
   deriving (Show)
 
 instance ToJSON LightUntaggedValue where
-  toJSON (LightUntaggedValue light) = genericToJSON defaultOptions { Data.Aeson.Types.sumEncoding = UntaggedValue } light
+  toJSON (LightUntaggedValue light) = genericToJSON defaultOptions {Data.Aeson.Types.sumEncoding = UntaggedValue} light
 
 instance ToSchema LightUntaggedValue where
   declareNamedSchema _ =
-    genericDeclareNamedSchema defaultSchemaOptions { Data.OpenApi.sumEncoding = UntaggedValue } (Proxy :: Proxy Light)
+    genericDeclareNamedSchema defaultSchemaOptions {Data.OpenApi.sumEncoding = UntaggedValue} (Proxy :: Proxy Light)
 
 instance Arbitrary LightUntaggedValue where
   arbitrary = LightUntaggedValue <$> arbitrary
@@ -247,7 +256,9 @@ data ButtonState = Neutral | Focus | Active | Hover | Disabled
   deriving (Show, Eq, Ord, Bounded, Enum, Generic)
 
 instance ToJSON ButtonState
+
 instance ToSchema ButtonState
+
 instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
 
 instance Arbitrary ButtonState where
@@ -255,15 +266,17 @@ instance Arbitrary ButtonState where
 
 type ImageUrl = T.Text
 
-newtype ButtonImages = ButtonImages { getButtonImages :: Map ButtonState ImageUrl }
+newtype ButtonImages = ButtonImages {getButtonImages :: Map ButtonState ImageUrl}
   deriving (Show, Generic)
 
 instance ToJSON ButtonImages where
   toJSON = toJSON . getButtonImages
 
 instance ToSchema ButtonImages where
-  declareNamedSchema = genericDeclareNamedSchemaNewtype defaultSchemaOptions
-    declareSchemaBoundedEnumKeyMapping
+  declareNamedSchema =
+    genericDeclareNamedSchemaNewtype
+      defaultSchemaOptions
+      declareSchemaBoundedEnumKeyMapping
 
 invalidButtonImagesToJSON :: ButtonImages -> Value
 invalidButtonImagesToJSON = genericToJSON defaultOptions
@@ -275,23 +288,26 @@ instance Arbitrary ButtonImages where
 -- FreeForm (wraps a raw JSON Value)
 -- ========================================================================
 
-data FreeForm = FreeForm { jsonContent :: Map T.Text Value }
+data FreeForm = FreeForm {jsonContent :: Map T.Text Value}
   deriving (Show, Generic)
 
 instance ToJSON FreeForm where
   toJSON = toJSON . jsonContent
 
 instance ToSchema FreeForm where
-  declareNamedSchema _ = pure $ NamedSchema (Just $ T.pack "FreeForm") $ mempty
-    & type_ ?~ OpenApiTypeSingle OpenApiObject
-    & additionalProperties ?~ AdditionalPropertiesAllowed True
+  declareNamedSchema _ =
+    pure $
+      NamedSchema (Just $ T.pack "FreeForm") $
+        mempty
+          & type_ ?~ OpenApiTypeSingle OpenApiObject
+          & additionalProperties ?~ AdditionalPropertiesAllowed True
 
 instance Arbitrary FreeForm where
   arbitrary = (FreeForm . fromList) <$> genObj
     where
       genObj = listOf $ do
         k <- arbitrary
-        v <- oneof [ String <$> arbitrary, Number <$> arbitrary, Bool <$> arbitrary, pure Null ]
+        v <- oneof [String <$> arbitrary, Number <$> arbitrary, Bool <$> arbitrary, pure Null]
         pure (k, v)
 
 instance Eq ZonedTime where

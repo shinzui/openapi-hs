@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+
 -- |
 -- Module:      Data.OpenApi.Optics
 -- Maintainer:  Andrzej Rybczak <andrzej@rybczak.net>
@@ -95,9 +96,9 @@
 module Data.OpenApi.Optics () where
 
 import Data.Aeson (Value)
-import Data.Scientific (Scientific)
 import Data.OpenApi.Internal
 import Data.OpenApi.Internal.Utils
+import Data.Scientific (Scientific)
 import Data.Text (Text)
 import Optics.Core
 import Optics.TH
@@ -145,26 +146,32 @@ makePrismLabels ''Referenced
 -- OpenApiItems prisms
 
 instance
-  ( a ~ Bool
-  , b ~ Bool
-  ) => LabelOptic "_OpenApiItemsBoolean"
-         A_Review
-         OpenApiItems
-         OpenApiItems
-         a
-         b where
+  ( a ~ Bool,
+    b ~ Bool
+  ) =>
+  LabelOptic
+    "_OpenApiItemsBoolean"
+    A_Review
+    OpenApiItems
+    OpenApiItems
+    a
+    b
+  where
   labelOptic = unto (\x -> OpenApiItemsBoolean x)
   {-# INLINE labelOptic #-}
 
 instance
-  ( a ~ Referenced Schema
-  , b ~ Referenced Schema
-  ) => LabelOptic "_OpenApiItemsObject"
-         A_Review
-         OpenApiItems
-         OpenApiItems
-         a
-         b where
+  ( a ~ Referenced Schema,
+    b ~ Referenced Schema
+  ) =>
+  LabelOptic
+    "_OpenApiItemsObject"
+    A_Review
+    OpenApiItems
+    OpenApiItems
+    a
+    b
+  where
   labelOptic = unto (\x -> OpenApiItemsObject x)
   {-# INLINE labelOptic #-}
 
@@ -172,151 +179,201 @@ instance
 -- More helpful instances for easier access to schema properties
 
 type instance Index Responses = HttpStatusCode
+
 type instance Index Operation = HttpStatusCode
 
 type instance IxValue Responses = Referenced Response
+
 type instance IxValue Operation = Referenced Response
 
 instance Ixed Responses where
   ix n = #responses % ix n
   {-# INLINE ix #-}
-instance At   Responses where
+
+instance At Responses where
   at n = #responses % at n
   {-# INLINE at #-}
 
 instance Ixed Operation where
   ix n = #responses % ix n
   {-# INLINE ix #-}
-instance At   Operation where
+
+instance At Operation where
   at n = #responses % at n
   {-# INLINE at #-}
 
 -- #type
 
 instance
-  ( a ~ Maybe OpenApiTypeValue
-  , b ~ Maybe OpenApiTypeValue
-  ) => LabelOptic "type" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe OpenApiTypeValue,
+    b ~ Maybe OpenApiTypeValue
+  ) =>
+  LabelOptic "type" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #type
   {-# INLINE labelOptic #-}
 
 -- #default
 
 instance
-  ( a ~ Maybe Value, b ~ Maybe Value
-  ) => LabelOptic "default" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Value,
+    b ~ Maybe Value
+  ) =>
+  LabelOptic "default" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #default
   {-# INLINE labelOptic #-}
 
 -- #format
 
 instance
-  ( a ~ Maybe Format, b ~ Maybe Format
-  ) => LabelOptic "format" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Format,
+    b ~ Maybe Format
+  ) =>
+  LabelOptic "format" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #format
   {-# INLINE labelOptic #-}
 
 -- #items
 
 instance
-  ( a ~ Maybe OpenApiItems
-  , b ~ Maybe OpenApiItems
-  ) => LabelOptic "items" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe OpenApiItems,
+    b ~ Maybe OpenApiItems
+  ) =>
+  LabelOptic "items" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #items
   {-# INLINE labelOptic #-}
 
 -- #maximum
 
 instance
-  ( a ~ Maybe Scientific, b ~ Maybe Scientific
-  ) => LabelOptic "maximum" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Scientific,
+    b ~ Maybe Scientific
+  ) =>
+  LabelOptic "maximum" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #maximum
   {-# INLINE labelOptic #-}
 
 -- #exclusiveMaximum
 
 instance
-  ( a ~ Maybe Scientific, b ~ Maybe Scientific
-  ) => LabelOptic "exclusiveMaximum" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Scientific,
+    b ~ Maybe Scientific
+  ) =>
+  LabelOptic "exclusiveMaximum" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #exclusiveMaximum
   {-# INLINE labelOptic #-}
 
 -- #minimum
 
 instance
-  ( a ~ Maybe Scientific, b ~ Maybe Scientific
-  ) => LabelOptic "minimum" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Scientific,
+    b ~ Maybe Scientific
+  ) =>
+  LabelOptic "minimum" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #minimum
   {-# INLINE labelOptic #-}
 
 -- #exclusiveMinimum
 
 instance
-  ( a ~ Maybe Scientific, b ~ Maybe Scientific
-  ) => LabelOptic "exclusiveMinimum" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Scientific,
+    b ~ Maybe Scientific
+  ) =>
+  LabelOptic "exclusiveMinimum" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #exclusiveMinimum
   {-# INLINE labelOptic #-}
 
 -- #maxLength
 
 instance
-  ( a ~ Maybe Integer, b ~ Maybe Integer
-  ) => LabelOptic "maxLength" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Integer,
+    b ~ Maybe Integer
+  ) =>
+  LabelOptic "maxLength" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #maxLength
   {-# INLINE labelOptic #-}
 
 -- #minLength
 
 instance
-  ( a ~ Maybe Integer, b ~ Maybe Integer
-  ) => LabelOptic "minLength" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Integer,
+    b ~ Maybe Integer
+  ) =>
+  LabelOptic "minLength" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #minLength
   {-# INLINE labelOptic #-}
 
 -- #pattern
 
 instance
-  ( a ~ Maybe Text, b ~ Maybe Text
-  ) => LabelOptic "pattern" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Text,
+    b ~ Maybe Text
+  ) =>
+  LabelOptic "pattern" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #pattern
   {-# INLINE labelOptic #-}
 
 -- #maxItems
 
 instance
-  ( a ~ Maybe Integer, b ~ Maybe Integer
-  ) => LabelOptic "maxItems" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Integer,
+    b ~ Maybe Integer
+  ) =>
+  LabelOptic "maxItems" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #maxItems
   {-# INLINE labelOptic #-}
 
 -- #minItems
 
 instance
-  ( a ~ Maybe Integer, b ~ Maybe Integer
-  ) => LabelOptic "minItems" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Integer,
+    b ~ Maybe Integer
+  ) =>
+  LabelOptic "minItems" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #minItems
   {-# INLINE labelOptic #-}
 
 -- #uniqueItems
 
 instance
-  ( a ~ Maybe Bool, b ~ Maybe Bool
-  ) => LabelOptic "uniqueItems" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Bool,
+    b ~ Maybe Bool
+  ) =>
+  LabelOptic "uniqueItems" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #uniqueItems
   {-# INLINE labelOptic #-}
 
 -- #enum
 
 instance
-  ( a ~ Maybe [Value], b ~ Maybe [Value]
-  ) => LabelOptic "enum" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe [Value],
+    b ~ Maybe [Value]
+  ) =>
+  LabelOptic "enum" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #enum
   {-# INLINE labelOptic #-}
 
 -- #multipleOf
 
 instance
-  ( a ~ Maybe Scientific, b ~ Maybe Scientific
-  ) => LabelOptic "multipleOf" A_Lens NamedSchema NamedSchema a b where
+  ( a ~ Maybe Scientific,
+    b ~ Maybe Scientific
+  ) =>
+  LabelOptic "multipleOf" A_Lens NamedSchema NamedSchema a b
+  where
   labelOptic = #schema % #multipleOf
   {-# INLINE labelOptic #-}

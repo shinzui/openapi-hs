@@ -4,30 +4,30 @@
 -- Stability:   experimental
 --
 -- Validate JSON values with OpenAPI Schema.
-module Data.OpenApi.Schema.Validation (
-  -- * How to use validation
-  -- $howto
+module Data.OpenApi.Schema.Validation
+  ( -- * How to use validation
+    -- $howto
 
-  -- ** Examples
-  -- $examples
+    -- ** Examples
+    -- $examples
 
-  -- ** Validating @'Maybe'@
-  -- $maybe
+    -- ** Validating @'Maybe'@
+    -- $maybe
 
-  -- * JSON validation
+    -- * JSON validation
+    ValidationError,
 
-  ValidationError,
+    -- ** Using @ToJSON@ and @ToSchema@
+    validatePrettyToJSON,
+    validateToJSON,
+    validateToJSONWithPatternChecker,
+    renderValidationErrors,
 
-  -- ** Using @ToJSON@ and @ToSchema@
-  validatePrettyToJSON,
-  validateToJSON,
-  validateToJSONWithPatternChecker,
-  renderValidationErrors,
-
-  -- ** Using @Value@ and @Schema@
-  validateJSON,
-  validateJSONWithPatternChecker,
-) where
+    -- ** Using @Value@ and @Schema@
+    validateJSON,
+    validateJSONWithPatternChecker,
+  )
+where
 
 import Data.OpenApi.Internal.Schema.Validation
 

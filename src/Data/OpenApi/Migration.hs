@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedLists   #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 -- |
 -- Module:      Data.OpenApi.Migration
 --
@@ -14,22 +15,22 @@
 -- helpers do. They are intentionally deprecated to flag that 3.0 input is
 -- transitional.
 module Data.OpenApi.Migration
-  ( migrate30To31
-  , migrate30NullableValue
-  , migrate30ExclusiveBoundsValue
-  , migrate30ItemsArrayValue
-  , migrate30SchemaValue
-  ) where
+  ( migrate30To31,
+    migrate30NullableValue,
+    migrate30ExclusiveBoundsValue,
+    migrate30ItemsArrayValue,
+    migrate30SchemaValue,
+  )
+where
 
-import           Data.Aeson                (Object, Value (..))
-import qualified Data.Text                 as T
-
-import           Data.OpenApi.Aeson.Compat (deleteKey, insertKey, lookupKey, stringToKey)
+import Data.Aeson (Object, Value (..))
+import Data.OpenApi.Aeson.Compat (deleteKey, insertKey, lookupKey, stringToKey)
+import Data.Text qualified as T
 
 -- | Apply a function to a JSON object's underlying map; leave non-objects alone.
 overObject :: (Object -> Object) -> Value -> Value
 overObject f (Object o) = Object (f o)
-overObject _ v          = v
+overObject _ v = v
 
 -- | Delete a key given as 'T.Text'.
 delKey :: T.Text -> Object -> Object
@@ -43,17 +44,17 @@ delKey k = deleteKey (stringToKey (T.unpack k))
 migrate30NullableValue :: Value -> Value
 migrate30NullableValue = overObject $ \o ->
   case lookupKey "nullable" o of
-    Just (Bool True)  -> insertKey "type" (addNull (lookupKey "type" o)) (delKey "nullable" o)
+    Just (Bool True) -> insertKey "type" (addNull (lookupKey "type" o)) (delKey "nullable" o)
     Just (Bool False) -> delKey "nullable" o
-    _                 -> o
+    _ -> o
   where
     addNull :: Maybe Value -> Value
     addNull (Just (String t)) = Array [String t, String "null"]
     addNull (Just (Array xs))
       | String "null" `elem` xs = Array xs
-      | otherwise               = Array (xs <> [String "null"])
-    addNull (Just v)          = Array [v, String "null"]
-    addNull Nothing           = Array [String "null"]
+      | otherwise = Array (xs <> [String "null"])
+    addNull (Just v) = Array [v, String "null"]
+    addNull Nothing = Array [String "null"]
 
 -- | Rewrite 3.0 boolean exclusive bounds into 3.1 numeric ones.
 --
@@ -69,9 +70,9 @@ migrate30ExclusiveBoundsValue =
       case lookupKey exclKey o of
         Just (Bool True) -> case lookupKey boundKey o of
           Just n@(Number _) -> insertKey exclKey n (delKey boundKey o)
-          _                 -> delKey exclKey o   -- exclusive:true but no bound: drop the bool
+          _ -> delKey exclKey o -- exclusive:true but no bound: drop the bool
         Just (Bool False) -> delKey exclKey o
-        _                 -> o
+        _ -> o
 
 -- | Rewrite a 3.0 tuple @items@ array into 3.1 @prefixItems@ + @items:false@.
 --
@@ -80,9 +81,12 @@ migrate30ExclusiveBoundsValue =
 migrate30ItemsArrayValue :: Value -> Value
 migrate30ItemsArrayValue = overObject $ \o ->
   case lookupKey "items" o of
-    Just (Array xs) -> insertKey "items" (Bool False)
-                         (insertKey "prefixItems" (Array xs) (delKey "items" o))
-    _               -> o
+    Just (Array xs) ->
+      insertKey
+        "items"
+        (Bool False)
+        (insertKey "prefixItems" (Array xs) (delKey "items" o))
+    _ -> o
 
 -- | Apply all single-object 3.0->3.1 rewrites to one schema object. The three
 -- rewrites operate on disjoint keys, so their order does not matter.
@@ -100,8 +104,12 @@ migrate30To31 = go
   where
     go (Object o) = migrate30SchemaValue (Object (fmap go o))
     go (Array xs) = Array (fmap go xs)
-    go v          = v
-
-{-# DEPRECATED migrate30To31, migrate30NullableValue, migrate30ExclusiveBoundsValue,
-               migrate30ItemsArrayValue, migrate30SchemaValue
-      "3.0 input support is transitional; remove once all inputs are 3.1." #-}
+    go v = v
+{-# DEPRECATED
+  migrate30To31,
+  migrate30NullableValue,
+  migrate30ExclusiveBoundsValue,
+  migrate30ItemsArrayValue,
+  migrate30SchemaValue
+  "3.0 input support is transitional; remove once all inputs are 3.1."
+  #-}

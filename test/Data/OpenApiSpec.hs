@@ -1,23 +1,21 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Data.OpenApiSpec where
 
-import Prelude ()
-import Prelude.Compat
-
 import Control.Lens
-
 import Data.Aeson
 import Data.Aeson.QQ.Simple
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashSet.InsOrd as InsOrdHS
-import Data.Text (Text)
-
+import Data.HashSet.InsOrd qualified as InsOrdHS
 import Data.OpenApi
+import Data.Text (Text)
+import Prelude.Compat
 import SpecCommon
 import Test.Hspec hiding (example)
+import Prelude ()
 
 spec :: Spec
 spec = do
@@ -39,7 +37,7 @@ spec = do
   describe "OAuth2 Security Definitions with empty Scope" $ oAuth2SecurityDefinitionsEmptyExample <=> oAuth2SecurityDefinitionsEmptyExampleJSON
   describe "Composition Schema Example" $ compositionSchemaExample <=> compositionSchemaExampleJSON
   describe "Swagger Object" $ do
-    context "Example with no paths" $ do 
+    context "Example with no paths" $ do
       emptyPathsFieldExample <=> emptyPathsFieldExampleJSON
       it "fails to parse a spec with a wrong Openapi spec version" $ do
         (fromJSON wrongVersionExampleJSON :: Result OpenApi) `shouldBe` Error "The provided version 3.0.4 is out of the allowed range >=3.1.0 && <=3.1.1"
@@ -62,16 +60,18 @@ main = hspec spec
 -- =======================================================================
 
 infoExample :: Info
-infoExample = mempty
-  & title          .~ "Swagger Sample App"
-  & description    ?~ "This is a sample server Petstore server."
-  & termsOfService ?~ "http://swagger.io/terms/"
-  & contact        ?~ contactExample
-  & license        ?~ licenseExample
-  & version        .~ "1.0.1"
+infoExample =
+  mempty
+    & title .~ "Swagger Sample App"
+    & description ?~ "This is a sample server Petstore server."
+    & termsOfService ?~ "http://swagger.io/terms/"
+    & contact ?~ contactExample
+    & license ?~ licenseExample
+    & version .~ "1.0.1"
 
 infoExampleJSON :: Value
-infoExampleJSON = [aesonQQ|
+infoExampleJSON =
+  [aesonQQ|
 {
   "title": "Swagger Sample App",
   "description": "This is a sample server Petstore server.",
@@ -94,13 +94,15 @@ infoExampleJSON = [aesonQQ|
 -- =======================================================================
 
 contactExample :: Contact
-contactExample = mempty
-  & name  ?~ "API Support"
-  & url   ?~ URL "http://www.swagger.io/support"
-  & email ?~ "support@swagger.io"
+contactExample =
+  mempty
+    & name ?~ "API Support"
+    & url ?~ URL "http://www.swagger.io/support"
+    & email ?~ "support@swagger.io"
 
 contactExampleJSON :: Value
-contactExampleJSON = [aesonQQ|
+contactExampleJSON =
+  [aesonQQ|
 {
   "name": "API Support",
   "url": "http://www.swagger.io/support",
@@ -113,48 +115,71 @@ contactExampleJSON = [aesonQQ|
 -- =======================================================================
 
 licenseExample :: License
-licenseExample = "Apache 2.0"
-  & url ?~ URL "http://www.apache.org/licenses/LICENSE-2.0.html"
+licenseExample =
+  "Apache 2.0"
+    & url ?~ URL "http://www.apache.org/licenses/LICENSE-2.0.html"
 
 licenseExampleJSON :: Value
-licenseExampleJSON = [aesonQQ|
+licenseExampleJSON =
+  [aesonQQ|
 {
   "name": "Apache 2.0",
   "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
 }
 |]
 
-
 -- =======================================================================
 -- Operation object
 -- =======================================================================
 
 operationExample :: Operation
-operationExample = mempty
-  & tags    .~ InsOrdHS.fromList ["pet"]
-  & summary ?~ "Updates a pet in the store with form data"
-  & description ?~ ""
-  & operationId ?~ "updatePetWithForm"
-  & parameters .~ [Inline (mempty
-    & name .~ "petId"
-    & description ?~ "ID of pet that needs to be updated"
-    & required ?~ True
-    & in_ .~ ParamPath
-    & schema ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))]
-  & requestBody ?~ Inline (
-    mempty & content . at "application/x-www-form-urlencoded" ?~ (mempty & schema ?~ (Inline (mempty
-      & properties . at "petId" ?~ Inline (mempty
-        & description ?~ "Updated name of the pet"
-        & type_ ?~ OpenApiTypeSingle OpenApiString)
-      & properties . at "status" ?~ Inline (mempty
-        & description ?~ "Updated status of the pet"
-        & type_ ?~ OpenApiTypeSingle OpenApiString)))))
-  & at 200 ?~ "Pet updated."
-  & at 405 ?~ "Invalid input"
-  & security .~ [SecurityRequirement [("petstore_auth", ["write:pets", "read:pets"])]]
+operationExample =
+  mempty
+    & tags .~ InsOrdHS.fromList ["pet"]
+    & summary ?~ "Updates a pet in the store with form data"
+    & description ?~ ""
+    & operationId ?~ "updatePetWithForm"
+    & parameters
+      .~ [ Inline
+             ( mempty
+                 & name .~ "petId"
+                 & description ?~ "ID of pet that needs to be updated"
+                 & required ?~ True
+                 & in_ .~ ParamPath
+                 & schema ?~ Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString)
+             )
+         ]
+    & requestBody
+      ?~ Inline
+        ( mempty
+            & content . at "application/x-www-form-urlencoded"
+              ?~ ( mempty
+                     & schema
+                       ?~ ( Inline
+                              ( mempty
+                                  & properties . at "petId"
+                                    ?~ Inline
+                                      ( mempty
+                                          & description ?~ "Updated name of the pet"
+                                          & type_ ?~ OpenApiTypeSingle OpenApiString
+                                      )
+                                  & properties . at "status"
+                                    ?~ Inline
+                                      ( mempty
+                                          & description ?~ "Updated status of the pet"
+                                          & type_ ?~ OpenApiTypeSingle OpenApiString
+                                      )
+                              )
+                          )
+                 )
+        )
+    & at 200 ?~ "Pet updated."
+    & at 405 ?~ "Invalid input"
+    & security .~ [SecurityRequirement [("petstore_auth", ["write:pets", "read:pets"])]]
 
 operationExampleJSON :: Value
-operationExampleJSON = [aesonQQ|
+operationExampleJSON =
+  [aesonQQ|
 {
   "tags": [
     "pet"
@@ -215,12 +240,14 @@ operationExampleJSON = [aesonQQ|
 -- =======================================================================
 
 schemaPrimitiveExample :: Schema
-schemaPrimitiveExample = mempty
-  & type_  ?~ OpenApiTypeSingle OpenApiString
-  & format ?~ "email"
+schemaPrimitiveExample =
+  mempty
+    & type_ ?~ OpenApiTypeSingle OpenApiString
+    & format ?~ "email"
 
 schemaPrimitiveExampleJSON :: Value
-schemaPrimitiveExampleJSON = [aesonQQ|
+schemaPrimitiveExampleJSON =
+  [aesonQQ|
 {
     "type": "string",
     "format": "email"
@@ -228,19 +255,24 @@ schemaPrimitiveExampleJSON = [aesonQQ|
 |]
 
 schemaSimpleModelExample :: Schema
-schemaSimpleModelExample = mempty
-  & type_ ?~ OpenApiTypeSingle OpenApiObject
-  & required .~ [ "name" ]
-  & properties .~
-      [ ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))
-      , ("address", Ref (Reference "Address"))
-      , ("age", Inline $ mempty
-            & minimum_ ?~ 0
-            & type_    ?~ OpenApiTypeSingle OpenApiInteger
-            & format   ?~ "int32" ) ]
+schemaSimpleModelExample =
+  mempty
+    & type_ ?~ OpenApiTypeSingle OpenApiObject
+    & required .~ ["name"]
+    & properties
+      .~ [ ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString)),
+           ("address", Ref (Reference "Address")),
+           ( "age",
+             Inline $ mempty
+               & minimum_ ?~ 0
+               & type_ ?~ OpenApiTypeSingle OpenApiInteger
+               & format ?~ "int32"
+           )
+         ]
 
 schemaSimpleModelExampleJSON :: Value
-schemaSimpleModelExampleJSON = [aesonQQ|
+schemaSimpleModelExampleJSON =
+  [aesonQQ|
 {  "required": [    "name"  ],
   "properties": {
     "name": {
@@ -260,12 +292,14 @@ schemaSimpleModelExampleJSON = [aesonQQ|
 |]
 
 schemaModelDictExample :: Schema
-schemaModelDictExample = mempty
-  & type_ ?~ OpenApiTypeSingle OpenApiObject
-  & additionalProperties ?~ AdditionalPropertiesSchema (Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))
+schemaModelDictExample =
+  mempty
+    & type_ ?~ OpenApiTypeSingle OpenApiObject
+    & additionalProperties ?~ AdditionalPropertiesSchema (Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))
 
 schemaModelDictExampleJSON :: Value
-schemaModelDictExampleJSON = [aesonQQ|
+schemaModelDictExampleJSON =
+  [aesonQQ|
 {
   "type": "object",
   "additionalProperties": {
@@ -275,12 +309,14 @@ schemaModelDictExampleJSON = [aesonQQ|
 |]
 
 schemaAdditionalExample :: Schema
-schemaAdditionalExample = mempty
-  & type_ ?~ OpenApiTypeSingle OpenApiObject
-  & additionalProperties ?~ AdditionalPropertiesAllowed True
+schemaAdditionalExample =
+  mempty
+    & type_ ?~ OpenApiTypeSingle OpenApiObject
+    & additionalProperties ?~ AdditionalPropertiesAllowed True
 
 schemaAdditionalExampleJSON :: Value
-schemaAdditionalExampleJSON = [aesonQQ|
+schemaAdditionalExampleJSON =
+  [aesonQQ|
 {
   "type": "object",
   "additionalProperties": true
@@ -288,16 +324,23 @@ schemaAdditionalExampleJSON = [aesonQQ|
 |]
 
 schemaWithExampleExample :: Schema
-schemaWithExampleExample = mempty
-  & type_ ?~ OpenApiTypeSingle OpenApiObject
-  & properties .~
-      [ ("id", Inline $ mempty
-            & type_  ?~ OpenApiTypeSingle OpenApiInteger
-            & format ?~ "int64" )
-      , ("name", Inline $ mempty
-            & type_ ?~ OpenApiTypeSingle OpenApiString) ]
-  & required .~ [ "name" ]
-  & example ?~ [aesonQQ|
+schemaWithExampleExample =
+  mempty
+    & type_ ?~ OpenApiTypeSingle OpenApiObject
+    & properties
+      .~ [ ( "id",
+             Inline $ mempty
+               & type_ ?~ OpenApiTypeSingle OpenApiInteger
+               & format ?~ "int64"
+           ),
+           ( "name",
+             Inline $ mempty
+               & type_ ?~ OpenApiTypeSingle OpenApiString
+           )
+         ]
+    & required .~ ["name"]
+    & example
+      ?~ [aesonQQ|
     {
       "name": "Puma",
       "id": 1
@@ -305,7 +348,8 @@ schemaWithExampleExample = mempty
   |]
 
 schemaWithExampleExampleJSON :: Value
-schemaWithExampleExampleJSON = [aesonQQ|
+schemaWithExampleExampleJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties": {
@@ -333,23 +377,35 @@ schemaWithExampleExampleJSON = [aesonQQ|
 
 definitionsExample :: HashMap Text Schema
 definitionsExample =
-  [ ("Category", mempty
-      & type_ ?~ OpenApiTypeSingle OpenApiObject
-      & properties .~
-          [ ("id", Inline $ mempty
-              & type_  ?~ OpenApiTypeSingle OpenApiInteger
-              & format ?~ "int64")
-          , ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString)) ] )
-  , ("Tag", mempty
-      & type_ ?~ OpenApiTypeSingle OpenApiObject
-      & properties .~
-          [ ("id", Inline $ mempty
-              & type_  ?~ OpenApiTypeSingle OpenApiInteger
-              & format ?~ "int64")
-          , ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString)) ] ) ]
+  [ ( "Category",
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiObject
+        & properties
+          .~ [ ( "id",
+                 Inline $ mempty
+                   & type_ ?~ OpenApiTypeSingle OpenApiInteger
+                   & format ?~ "int64"
+               ),
+               ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))
+             ]
+    ),
+    ( "Tag",
+      mempty
+        & type_ ?~ OpenApiTypeSingle OpenApiObject
+        & properties
+          .~ [ ( "id",
+                 Inline $ mempty
+                   & type_ ?~ OpenApiTypeSingle OpenApiInteger
+                   & format ?~ "int64"
+               ),
+               ("name", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))
+             ]
+    )
+  ]
 
 definitionsExampleJSON :: Value
-definitionsExampleJSON = [aesonQQ|
+definitionsExampleJSON =
+  [aesonQQ|
 {
   "Category": {
     "type": "object",
@@ -384,25 +440,37 @@ definitionsExampleJSON = [aesonQQ|
 
 paramsDefinitionExample :: HashMap Text Param
 paramsDefinitionExample =
-  [ ("skipParam", mempty
-      & name .~ "skip"
-      & description ?~ "number of items to skip"
-      & required ?~ True
-      & in_    .~ ParamQuery
-      & schema ?~ Inline (mempty
-          & type_  ?~ OpenApiTypeSingle OpenApiInteger
-          & format ?~ "int32" ))
-  , ("limitParam", mempty
-      & name .~ "limit"
-      & description ?~ "max records to return"
-      & required ?~ True
-      & in_    .~ ParamQuery
-      & schema ?~ Inline (mempty
-          & type_  ?~ OpenApiTypeSingle OpenApiInteger
-          & format ?~ "int32" )) ]
+  [ ( "skipParam",
+      mempty
+        & name .~ "skip"
+        & description ?~ "number of items to skip"
+        & required ?~ True
+        & in_ .~ ParamQuery
+        & schema
+          ?~ Inline
+            ( mempty
+                & type_ ?~ OpenApiTypeSingle OpenApiInteger
+                & format ?~ "int32"
+            )
+    ),
+    ( "limitParam",
+      mempty
+        & name .~ "limit"
+        & description ?~ "max records to return"
+        & required ?~ True
+        & in_ .~ ParamQuery
+        & schema
+          ?~ Inline
+            ( mempty
+                & type_ ?~ OpenApiTypeSingle OpenApiInteger
+                & format ?~ "int32"
+            )
+    )
+  ]
 
 paramsDefinitionExampleJSON :: Value
-paramsDefinitionExampleJSON = [aesonQQ|
+paramsDefinitionExampleJSON =
+  [aesonQQ|
 {
   "skipParam": {
     "name": "skip",
@@ -433,11 +501,13 @@ paramsDefinitionExampleJSON = [aesonQQ|
 
 responsesDefinitionExample :: HashMap Text Response
 responsesDefinitionExample =
-  [ ("NotFound", mempty & description .~ "Entity not found.")
-  , ("IllegalInput", mempty & description .~ "Illegal input for operation.") ]
+  [ ("NotFound", mempty & description .~ "Entity not found."),
+    ("IllegalInput", mempty & description .~ "Illegal input for operation.")
+  ]
 
 responsesDefinitionExampleJSON :: Value
-responsesDefinitionExampleJSON = [aesonQQ|
+responsesDefinitionExampleJSON =
+  [aesonQQ|
 {
   "NotFound": {
     "description": "Entity not found."
@@ -453,21 +523,37 @@ responsesDefinitionExampleJSON = [aesonQQ|
 -- =======================================================================
 
 securityDefinitionsExample :: SecurityDefinitions
-securityDefinitionsExample = SecurityDefinitions
-  [ ("api_key", SecurityScheme
-      { _securitySchemeType = SecuritySchemeApiKey (ApiKeyParams "api_key" ApiKeyHeader)
-      , _securitySchemeDescription = Nothing })
-  , ("petstore_auth", SecurityScheme
-      { _securitySchemeType = SecuritySchemeOAuth2 (mempty & implicit ?~ OAuth2Flow
-            { _oAuth2Params = OAuth2ImplicitFlow "http://swagger.io/api/oauth/dialog"
-            , _oAath2RefreshUrl = Nothing
-            , _oAuth2Scopes =
-                [ ("write:pets",  "modify pets in your account")
-                , ("read:pets", "read your pets") ] } )
-      , _securitySchemeDescription = Nothing }) ]
+securityDefinitionsExample =
+  SecurityDefinitions
+    [ ( "api_key",
+        SecurityScheme
+          { _securitySchemeType = SecuritySchemeApiKey (ApiKeyParams "api_key" ApiKeyHeader),
+            _securitySchemeDescription = Nothing
+          }
+      ),
+      ( "petstore_auth",
+        SecurityScheme
+          { _securitySchemeType =
+              SecuritySchemeOAuth2
+                ( mempty
+                    & implicit
+                      ?~ OAuth2Flow
+                        { _oAuth2Params = OAuth2ImplicitFlow "http://swagger.io/api/oauth/dialog",
+                          _oAath2RefreshUrl = Nothing,
+                          _oAuth2Scopes =
+                            [ ("write:pets", "modify pets in your account"),
+                              ("read:pets", "read your pets")
+                            ]
+                        }
+                ),
+            _securitySchemeDescription = Nothing
+          }
+      )
+    ]
 
 securityDefinitionsExampleJSON :: Value
-securityDefinitionsExampleJSON = [aesonQQ|
+securityDefinitionsExampleJSON =
+  [aesonQQ|
 {
   "api_key": {
     "in": "header",
@@ -491,46 +577,76 @@ securityDefinitionsExampleJSON = [aesonQQ|
 |]
 
 oAuth2SecurityDefinitionsReadExample :: SecurityDefinitions
-oAuth2SecurityDefinitionsReadExample = SecurityDefinitions
-  [ ("petstore_auth", SecurityScheme
-      { _securitySchemeType = SecuritySchemeOAuth2 (mempty & implicit ?~ OAuth2Flow
-            { _oAuth2Params = OAuth2ImplicitFlow "http://swagger.io/api/oauth/dialog"
-            , _oAath2RefreshUrl = Nothing
-            , _oAuth2Scopes =
-              [ ("read:pets", "read your pets") ] } )
-      , _securitySchemeDescription = Nothing })
-  ]
+oAuth2SecurityDefinitionsReadExample =
+  SecurityDefinitions
+    [ ( "petstore_auth",
+        SecurityScheme
+          { _securitySchemeType =
+              SecuritySchemeOAuth2
+                ( mempty
+                    & implicit
+                      ?~ OAuth2Flow
+                        { _oAuth2Params = OAuth2ImplicitFlow "http://swagger.io/api/oauth/dialog",
+                          _oAath2RefreshUrl = Nothing,
+                          _oAuth2Scopes =
+                            [("read:pets", "read your pets")]
+                        }
+                ),
+            _securitySchemeDescription = Nothing
+          }
+      )
+    ]
 
 oAuth2SecurityDefinitionsWriteExample :: SecurityDefinitions
-oAuth2SecurityDefinitionsWriteExample = SecurityDefinitions
-  [ ("petstore_auth", SecurityScheme
-      { _securitySchemeType = SecuritySchemeOAuth2 (mempty & implicit ?~ OAuth2Flow
-            { _oAuth2Params = OAuth2ImplicitFlow "http://swagger.io/api/oauth/dialog"
-            , _oAath2RefreshUrl = Nothing
-            , _oAuth2Scopes =
-                [ ("write:pets", "modify pets in your account") ] } )
-      , _securitySchemeDescription = Nothing })
-  ]
+oAuth2SecurityDefinitionsWriteExample =
+  SecurityDefinitions
+    [ ( "petstore_auth",
+        SecurityScheme
+          { _securitySchemeType =
+              SecuritySchemeOAuth2
+                ( mempty
+                    & implicit
+                      ?~ OAuth2Flow
+                        { _oAuth2Params = OAuth2ImplicitFlow "http://swagger.io/api/oauth/dialog",
+                          _oAath2RefreshUrl = Nothing,
+                          _oAuth2Scopes =
+                            [("write:pets", "modify pets in your account")]
+                        }
+                ),
+            _securitySchemeDescription = Nothing
+          }
+      )
+    ]
 
 oAuth2SecurityDefinitionsEmptyExample :: SecurityDefinitions
-oAuth2SecurityDefinitionsEmptyExample = SecurityDefinitions
-  [ ("petstore_auth", SecurityScheme
-      { _securitySchemeType = SecuritySchemeOAuth2 (mempty & implicit ?~ OAuth2Flow
-            { _oAuth2Params = OAuth2ImplicitFlow "http://swagger.io/api/oauth/dialog"
-            , _oAath2RefreshUrl = Nothing
-            , _oAuth2Scopes = []
-            } )
-      , _securitySchemeDescription = Nothing })
-  ]
+oAuth2SecurityDefinitionsEmptyExample =
+  SecurityDefinitions
+    [ ( "petstore_auth",
+        SecurityScheme
+          { _securitySchemeType =
+              SecuritySchemeOAuth2
+                ( mempty
+                    & implicit
+                      ?~ OAuth2Flow
+                        { _oAuth2Params = OAuth2ImplicitFlow "http://swagger.io/api/oauth/dialog",
+                          _oAath2RefreshUrl = Nothing,
+                          _oAuth2Scopes = []
+                        }
+                ),
+            _securitySchemeDescription = Nothing
+          }
+      )
+    ]
 
 oAuth2SecurityDefinitionsExample :: SecurityDefinitions
 oAuth2SecurityDefinitionsExample =
-  oAuth2SecurityDefinitionsWriteExample <>
-  oAuth2SecurityDefinitionsReadExample <>
-  oAuth2SecurityDefinitionsEmptyExample
+  oAuth2SecurityDefinitionsWriteExample
+    <> oAuth2SecurityDefinitionsReadExample
+    <> oAuth2SecurityDefinitionsEmptyExample
 
 oAuth2SecurityDefinitionsExampleJSON :: Value
-oAuth2SecurityDefinitionsExampleJSON = [aesonQQ|
+oAuth2SecurityDefinitionsExampleJSON =
+  [aesonQQ|
 {
   "petstore_auth": {
     "type": "oauth2",
@@ -548,7 +664,8 @@ oAuth2SecurityDefinitionsExampleJSON = [aesonQQ|
 |]
 
 oAuth2SecurityDefinitionsEmptyExampleJSON :: Value
-oAuth2SecurityDefinitionsEmptyExampleJSON = [aesonQQ|
+oAuth2SecurityDefinitionsEmptyExampleJSON =
+  [aesonQQ|
 {
   "petstore_auth": {
     "type": "oauth2",
@@ -586,7 +703,8 @@ emptyPathsFieldExample :: OpenApi
 emptyPathsFieldExample = mempty
 
 wrongVersionExampleJSON :: Value
-wrongVersionExampleJSON = [aesonQQ|
+wrongVersionExampleJSON =
+  [aesonQQ|
 {
   "openapi": "3.0.4",
   "info": {"version": "", "title": ""},
@@ -596,7 +714,8 @@ wrongVersionExampleJSON = [aesonQQ|
 |]
 
 emptyPathsFieldExampleJSON :: Value
-emptyPathsFieldExampleJSON = [aesonQQ|
+emptyPathsFieldExampleJSON =
+  [aesonQQ|
 {
   "openapi": "3.1.0",
   "info": {"version": "", "title": ""},
@@ -606,44 +725,69 @@ emptyPathsFieldExampleJSON = [aesonQQ|
 |]
 
 swaggerExample :: OpenApi
-swaggerExample = mempty
-  -- & basePath ?~ "/"
-  -- & schemes ?~ [Http]
-  & info .~ (mempty
-      & version .~ "1.0"
-      & title .~ "Todo API"
-      & license ?~ "MIT"
-      & license._Just.url ?~ URL "http://mit.com"
-      & description ?~ "This is an API that tests servant-swagger support for a Todo API")
-  & paths.at "/todo/{id}" ?~ (mempty & get ?~ ((mempty :: Operation)
-      & responses . at 200 ?~ Inline (mempty
-          & description .~ "OK"
-          & content . at "application/json" ?~ (mempty
-              & schema ?~ Inline (mempty
-                  & type_ ?~ OpenApiTypeSingle OpenApiObject
-                  & example ?~ [aesonQQ|
+swaggerExample =
+  mempty
+    -- & basePath ?~ "/"
+    -- & schemes ?~ [Http]
+    & info
+      .~ ( mempty
+             & version .~ "1.0"
+             & title .~ "Todo API"
+             & license ?~ "MIT"
+             & license . _Just . url ?~ URL "http://mit.com"
+             & description ?~ "This is an API that tests servant-swagger support for a Todo API"
+         )
+    & paths . at "/todo/{id}"
+      ?~ ( mempty
+             & get
+               ?~ ( (mempty :: Operation)
+                      & responses . at 200
+                        ?~ Inline
+                          ( mempty
+                              & description .~ "OK"
+                              & content . at "application/json"
+                                ?~ ( mempty
+                                       & schema
+                                         ?~ Inline
+                                           ( mempty
+                                               & type_ ?~ OpenApiTypeSingle OpenApiObject
+                                               & example
+                                                 ?~ [aesonQQ|
                       {
                         "created": 100,
                         "description": "get milk"
                       } |]
-                  & description ?~ "This is some real Todo right here"
-                  & properties .~
-                     [ ("created", Inline $ mempty
-                         & type_  ?~ OpenApiTypeSingle OpenApiInteger
-                         & format ?~ "int32")
-                     , ("description", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))])))
-      & parameters .~
-          [ Inline $ mempty
-              & required ?~ True
-              & name .~ "id"
-              & description ?~ "TodoId param"
-              & in_ .~ ParamPath
-              & schema ?~ Inline (mempty
-                  & type_ ?~ OpenApiTypeSingle OpenApiString ) ]
-      & tags .~ InsOrdHS.fromList [ "todo" ] ))
+                                               & description ?~ "This is some real Todo right here"
+                                               & properties
+                                                 .~ [ ( "created",
+                                                        Inline $ mempty
+                                                          & type_ ?~ OpenApiTypeSingle OpenApiInteger
+                                                          & format ?~ "int32"
+                                                      ),
+                                                      ("description", Inline (mempty & type_ ?~ OpenApiTypeSingle OpenApiString))
+                                                    ]
+                                           )
+                                   )
+                          )
+                      & parameters
+                        .~ [ Inline $ mempty
+                               & required ?~ True
+                               & name .~ "id"
+                               & description ?~ "TodoId param"
+                               & in_ .~ ParamPath
+                               & schema
+                                 ?~ Inline
+                                   ( mempty
+                                       & type_ ?~ OpenApiTypeSingle OpenApiString
+                                   )
+                           ]
+                      & tags .~ InsOrdHS.fromList ["todo"]
+                  )
+         )
 
 swaggerExampleJSON :: Value
-swaggerExampleJSON = [aesonQQ|
+swaggerExampleJSON =
+  [aesonQQ|
 {
     "openapi": "3.1.0",
     "info": {
@@ -706,7 +850,8 @@ swaggerExampleJSON = [aesonQQ|
 |]
 
 petstoreExampleJSON :: Value
-petstoreExampleJSON = [aesonQQ|
+petstoreExampleJSON =
+  [aesonQQ|
 {
   "openapi": "3.1.0",
   "info": {
@@ -977,18 +1122,25 @@ petstoreExampleJSON = [aesonQQ|
 |]
 
 compositionSchemaExample :: Schema
-compositionSchemaExample = mempty
-  & Data.OpenApi.allOf ?~ [
-      Ref (Reference "Other")
-    , Inline (mempty
-             & type_ ?~ OpenApiTypeSingle OpenApiObject
-             & properties .~
-                  [ ("greet", Inline $ mempty
-                            & type_ ?~ OpenApiTypeSingle OpenApiString) ])
-  ]
+compositionSchemaExample =
+  mempty
+    & Data.OpenApi.allOf
+      ?~ [ Ref (Reference "Other"),
+           Inline
+             ( mempty
+                 & type_ ?~ OpenApiTypeSingle OpenApiObject
+                 & properties
+                   .~ [ ( "greet",
+                          Inline $ mempty
+                            & type_ ?~ OpenApiTypeSingle OpenApiString
+                        )
+                      ]
+             )
+         ]
 
 compositionSchemaExampleJSON :: Value
-compositionSchemaExampleJSON = [aesonQQ|
+compositionSchemaExampleJSON =
+  [aesonQQ|
 {
   "allOf": [
       {

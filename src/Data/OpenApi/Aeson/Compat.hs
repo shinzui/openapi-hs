@@ -16,9 +16,9 @@ import qualified Data.Aeson.KeyMap as KeyMap
 #else
 import qualified Data.HashMap.Strict as HM
 #endif
-import           Data.Bifunctor             (first)
-import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
-import qualified Data.Text                  as T
+import Data.Bifunctor (first)
+import Data.HashMap.Strict.InsOrd.Compat qualified as InsOrdHashMap
+import Data.Text qualified as T
 
 #if MIN_VERSION_aeson(2,0,0)
 deleteKey :: Key -> KeyMap.KeyMap v -> KeyMap.KeyMap v

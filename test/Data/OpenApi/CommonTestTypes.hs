@@ -1,35 +1,36 @@
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.OpenApi.CommonTestTypes where
 
-import           Prelude               ()
-import           Prelude.Compat
-
-import           Data.Aeson            (ToJSON (..), ToJSONKey (..), Value)
-import           Data.Aeson.QQ.Simple
-import           Data.Aeson.Types      (toJSONKeyText)
-import           Data.Char
-import           Data.Map              (Map)
-import           Data.Proxy
-import           Data.Set              (Set)
-import qualified Data.Text             as Text
-import           Data.Word
-import           GHC.Generics
-
-import           Data.OpenApi
+import Data.Aeson (ToJSON (..), ToJSONKey (..), Value)
+import Data.Aeson.QQ.Simple
+import Data.Aeson.Types (toJSONKeyText)
+import Data.Char
+import Data.Map (Map)
+import Data.OpenApi
+import Data.Proxy
+import Data.Set (Set)
+import Data.Text qualified as Text
+import Data.Word
+import GHC.Generics
+import Prelude.Compat
+import Prelude ()
 
 -- ========================================================================
 -- Unit type
 -- ========================================================================
 
 data Unit = Unit deriving (Generic)
+
 instance ToParamSchema Unit
+
 instance ToSchema Unit
 
 unitSchemaJSON :: Value
-unitSchemaJSON = [aesonQQ|
+unitSchemaJSON =
+  [aesonQQ|
 {
   "type": "string",
   "enum": ["Unit"]
@@ -44,11 +45,14 @@ data Color
   | Green
   | Blue
   deriving (Generic)
+
 instance ToParamSchema Color
+
 instance ToSchema Color
 
 colorSchemaJSON :: Value
-colorSchemaJSON = [aesonQQ|
+colorSchemaJSON =
+  [aesonQQ|
 {
   "type": "string",
   "enum": ["Red", "Green", "Blue"]
@@ -60,12 +64,14 @@ colorSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 data Shade = Dim | Bright deriving (Generic)
+
 instance ToParamSchema Shade
 
 instance ToSchema Shade where declareNamedSchema = pure . paramSchemaToNamedSchema defaultSchemaOptions
 
 shadeSchemaJSON :: Value
-shadeSchemaJSON = [aesonQQ|
+shadeSchemaJSON =
+  [aesonQQ|
 {
   "type": "string",
   "enum": ["Dim", "Bright"]
@@ -76,12 +82,14 @@ shadeSchemaJSON = [aesonQQ|
 -- Paint (record with bounded enum property)
 -- ========================================================================
 
-newtype Paint = Paint { color :: Color }
+newtype Paint = Paint {color :: Color}
   deriving (Generic)
+
 instance ToSchema Paint
 
 paintSchemaJSON :: Value
-paintSchemaJSON = [aesonQQ|
+paintSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -96,7 +104,8 @@ paintSchemaJSON = [aesonQQ|
 |]
 
 paintInlinedSchemaJSON :: Value
-paintInlinedSchemaJSON = [aesonQQ|
+paintInlinedSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -121,14 +130,22 @@ data Status
   deriving (Generic)
 
 instance ToParamSchema Status where
-  toParamSchema = genericToParamSchema defaultSchemaOptions
-    { constructorTagModifier = map toLower . drop (length "Status") }
+  toParamSchema =
+    genericToParamSchema
+      defaultSchemaOptions
+        { constructorTagModifier = map toLower . drop (length "Status")
+        }
+
 instance ToSchema Status where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { constructorTagModifier = map toLower . drop (length "Status") }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { constructorTagModifier = map toLower . drop (length "Status")
+        }
 
 statusSchemaJSON :: Value
-statusSchemaJSON = [aesonQQ|
+statusSchemaJSON =
+  [aesonQQ|
 {
   "type": "string",
   "enum": ["ok", "error"]
@@ -139,15 +156,21 @@ statusSchemaJSON = [aesonQQ|
 -- Email (newtype with unwrapUnaryRecords set to True)
 -- ========================================================================
 
-newtype Email = Email { getEmail :: String }
+newtype Email = Email {getEmail :: String}
   deriving (Generic)
+
 instance ToParamSchema Email
+
 instance ToSchema Email where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { unwrapUnaryRecords = True }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { unwrapUnaryRecords = True
+        }
 
 emailSchemaJSON :: Value
-emailSchemaJSON = [aesonQQ|
+emailSchemaJSON =
+  [aesonQQ|
 {
   "type": "string"
 }
@@ -159,11 +182,14 @@ emailSchemaJSON = [aesonQQ|
 
 newtype UserId = UserId Integer
   deriving (Eq, Ord, Generic)
+
 instance ToParamSchema UserId
+
 instance ToSchema UserId
 
 userIdSchemaJSON :: Value
-userIdSchemaJSON = [aesonQQ|
+userIdSchemaJSON =
+  [aesonQQ|
 {
   "type": "integer"
 }
@@ -175,10 +201,12 @@ userIdSchemaJSON = [aesonQQ|
 
 newtype UserGroup = UserGroup (Set UserId)
   deriving (Generic)
+
 instance ToSchema UserGroup
 
 userGroupSchemaJSON :: Value
-userGroupSchemaJSON = [aesonQQ|
+userGroupSchemaJSON =
+  [aesonQQ|
 {
   "type": "array",
   "items": { "$ref": "#/components/schemas/UserId" },
@@ -190,15 +218,17 @@ userGroupSchemaJSON = [aesonQQ|
 -- Person (simple record with optional fields)
 -- ========================================================================
 data Person = Person
-  { name  :: String
-  , phone :: Integer
-  , email :: Maybe String
-  } deriving (Generic)
+  { name :: String,
+    phone :: Integer,
+    email :: Maybe String
+  }
+  deriving (Generic)
 
 instance ToSchema Person
 
 personSchemaJSON :: Value
-personSchemaJSON = [aesonQQ|
+personSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -217,11 +247,14 @@ personSchemaJSON = [aesonQQ|
 
 newtype Player = Player
   { position :: Point
-  } deriving (Generic)
+  }
+  deriving (Generic)
+
 instance ToSchema Player
 
 playerSchemaJSON :: Value
-playerSchemaJSON = [aesonQQ|
+playerSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -237,10 +270,12 @@ playerSchemaJSON = [aesonQQ|
 
 newtype Players = Players [Inlined Player]
   deriving (Generic)
+
 instance ToSchema Players
 
 playersSchemaJSON :: Value
-playersSchemaJSON = [aesonQQ|
+playersSchemaJSON =
+  [aesonQQ|
 {
   "type": "array",
   "items":
@@ -264,12 +299,14 @@ playersSchemaJSON = [aesonQQ|
 
 data Character
   = PC Player
-  | NPC { npcName :: String, npcPosition :: Point }
+  | NPC {npcName :: String, npcPosition :: Point}
   deriving (Generic)
+
 instance ToSchema Character
 
 characterSchemaJSON :: Value
-characterSchemaJSON = [aesonQQ|
+characterSchemaJSON =
+  [aesonQQ|
 {
   "oneOf": [
     {
@@ -320,7 +357,8 @@ characterSchemaJSON = [aesonQQ|
 |]
 
 characterInlinedSchemaJSON :: Value
-characterInlinedSchemaJSON = [aesonQQ|
+characterInlinedSchemaJSON =
+  [aesonQQ|
 {
   "oneOf": [
     {
@@ -406,7 +444,8 @@ characterInlinedSchemaJSON = [aesonQQ|
 |]
 
 characterInlinedPlayerSchemaJSON :: Value
-characterInlinedPlayerSchemaJSON = [aesonQQ|
+characterInlinedPlayerSchemaJSON =
+  [aesonQQ|
 {
   "oneOf": [
     {
@@ -477,7 +516,8 @@ instance ToSchema ISPair
 -- @oneOf@ so overlapping member types like Integer/Number still validate).
 -- TODO(EP-4): switch tuple derivation to @prefixItems@ and restore positional shape.
 ispairSchemaJSON :: Value
-ispairSchemaJSON = [aesonQQ|
+ispairSchemaJSON =
+  [aesonQQ|
 {
   "type": "array",
   "items":
@@ -498,16 +538,21 @@ ispairSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 data Point = Point
-  { pointX :: Double
-  , pointY :: Double
-  } deriving (Generic)
+  { pointX :: Double,
+    pointY :: Double
+  }
+  deriving (Generic)
 
 instance ToSchema Point where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { fieldLabelModifier = map toLower . drop (length "point") }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { fieldLabelModifier = map toLower . drop (length "point")
+        }
 
 pointSchemaJSON :: Value
-pointSchemaJSON = [aesonQQ|
+pointSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -524,19 +569,24 @@ pointSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 data Point5 = Point5
-  { point5X :: Double
-  , point5Y :: Double
-  , point5Z :: Double
-  , point5U :: Double
-  , point5V :: Double -- 5 dimensional!
-  } deriving (Generic)
+  { point5X :: Double,
+    point5Y :: Double,
+    point5Z :: Double,
+    point5U :: Double,
+    point5V :: Double -- 5 dimensional!
+  }
+  deriving (Generic)
 
 instance ToSchema Point5 where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { fieldLabelModifier = map toLower . drop (length "point5") }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { fieldLabelModifier = map toLower . drop (length "point5")
+        }
 
 point5SchemaJSON :: Value
-point5SchemaJSON = [aesonQQ|
+point5SchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -559,16 +609,21 @@ point5Properties = ["x", "y", "z", "u", "v"]
 -- ========================================================================
 
 data MyRoseTree = MyRoseTree
-  { root  :: String
-  , trees :: [MyRoseTree]
-  } deriving (Generic)
+  { root :: String,
+    trees :: [MyRoseTree]
+  }
+  deriving (Generic)
 
 instance ToSchema MyRoseTree where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { datatypeNameModifier = drop (length "My") }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { datatypeNameModifier = drop (length "My")
+        }
 
 myRoseTreeSchemaJSON :: Value
-myRoseTreeSchemaJSON = [aesonQQ|
+myRoseTreeSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -588,16 +643,21 @@ myRoseTreeSchemaJSON = [aesonQQ|
 |]
 
 data MyRoseTree' = MyRoseTree'
-  { root'  :: String
-  , trees' :: [MyRoseTree']
-  } deriving (Generic)
+  { root' :: String,
+    trees' :: [MyRoseTree']
+  }
+  deriving (Generic)
 
 instance ToSchema MyRoseTree' where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { datatypeNameModifier = map toLower }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { datatypeNameModifier = map toLower
+        }
 
 myRoseTreeSchemaJSON' :: Value
-myRoseTreeSchemaJSON' = [aesonQQ|
+myRoseTreeSchemaJSON' =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -620,9 +680,9 @@ myRoseTreeSchemaJSON' = [aesonQQ|
 -- Inlined (newtype for inlining schemas)
 -- ========================================================================
 
-newtype Inlined a = Inlined { getInlined :: a }
+newtype Inlined a = Inlined {getInlined :: a}
 
-instance ToSchema a => ToSchema (Inlined a) where
+instance (ToSchema a) => ToSchema (Inlined a) where
   declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
     where
       unname (NamedSchema _ s) = NamedSchema Nothing s
@@ -635,15 +695,19 @@ data Light
   = NoLight
   | LightFreq Double
   | LightColor Color
-  | LightWaveLength { waveLength :: Double }
+  | LightWaveLength {waveLength :: Double}
   deriving (Generic)
 
 instance ToSchema Light where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { unwrapUnaryRecords = True }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { unwrapUnaryRecords = True
+        }
 
 lightSchemaJSON :: Value
-lightSchemaJSON = [aesonQQ|
+lightSchemaJSON =
+  [aesonQQ|
 {
   "oneOf": [
     {
@@ -725,7 +789,8 @@ lightSchemaJSON = [aesonQQ|
 |]
 
 lightInlinedSchemaJSON :: Value
-lightInlinedSchemaJSON = [aesonQQ|
+lightInlinedSchemaJSON =
+  [aesonQQ|
 {
   "oneOf": [
     {
@@ -816,9 +881,11 @@ lightInlinedSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 newtype Id = Id String deriving (Generic)
+
 instance ToSchema Id
 
 newtype ResourceId = ResourceId Id deriving (Generic)
+
 instance ToSchema ResourceId
 
 -- ========================================================================
@@ -829,23 +896,28 @@ data ButtonState = Neutral | Focus | Active | Hover | Disabled
   deriving (Show, Bounded, Enum, Generic)
 
 instance ToJSON ButtonState
+
 instance ToSchema ButtonState
+
 instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (Text.pack . show)
 
 type ImageUrl = Text.Text
 
-newtype ButtonImages = ButtonImages { getButtonImages :: Map ButtonState ImageUrl }
+newtype ButtonImages = ButtonImages {getButtonImages :: Map ButtonState ImageUrl}
   deriving (Generic)
 
 instance ToJSON ButtonImages where
   toJSON = toJSON . getButtonImages
 
 instance ToSchema ButtonImages where
-  declareNamedSchema = genericDeclareNamedSchemaNewtype defaultSchemaOptions
-    declareSchemaBoundedEnumKeyMapping
+  declareNamedSchema =
+    genericDeclareNamedSchemaNewtype
+      defaultSchemaOptions
+      declareSchemaBoundedEnumKeyMapping
 
 buttonImagesSchemaJSON :: Value
-buttonImagesSchemaJSON = [aesonQQ|
+buttonImagesSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -863,14 +935,16 @@ buttonImagesSchemaJSON = [aesonQQ|
 -- SingleMaybeField (single field data with optional field)
 -- ========================================================================
 
-data SingleMaybeField = SingleMaybeField { singleMaybeField :: Maybe String }
+data SingleMaybeField = SingleMaybeField {singleMaybeField :: Maybe String}
   deriving (Show, Generic)
 
 instance ToJSON SingleMaybeField
+
 instance ToSchema SingleMaybeField
 
 singleMaybeFieldSchemaJSON :: Value
-singleMaybeFieldSchemaJSON = [aesonQQ|
+singleMaybeFieldSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":
@@ -885,35 +959,43 @@ singleMaybeFieldSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 data Predicate
-  = PredicateNoun    Noun
+  = PredicateNoun Noun
   | PredicateOmitted Omitted
   deriving (Eq, Ord, Read, Show, Generic)
+
 instance ToJSON Predicate
+
 instance ToSchema Predicate
 
 data Noun
   = Noun
-  { nounSurf   :: LangWord
-  , nounModify :: [Modifier]
+  { nounSurf :: LangWord,
+    nounModify :: [Modifier]
   }
   deriving (Eq, Ord, Read, Show, Generic)
+
 instance ToJSON Noun
+
 instance ToSchema Noun
 
 data LangWord
   = LangWord
-  { langWordSurf :: String
-  , langWordBase :: String
+  { langWordSurf :: String,
+    langWordBase :: String
   }
   deriving (Eq, Ord, Read, Show, Generic)
+
 instance ToJSON LangWord
+
 instance ToSchema LangWord
 
 data Modifier
-  = ModifierNoun     Noun
-  | ModifierOmitted  Omitted
+  = ModifierNoun Noun
+  | ModifierOmitted Omitted
   deriving (Eq, Ord, Read, Show, Generic)
+
 instance ToJSON Modifier
+
 instance ToSchema Modifier
 
 newtype Omitted
@@ -921,11 +1003,14 @@ newtype Omitted
   { omittedModify :: [Modifier]
   }
   deriving (Eq, Ord, Read, Show, Generic)
+
 instance ToJSON Omitted
+
 instance ToSchema Omitted
 
 predicateSchemaDeclareJSON :: Value
-predicateSchemaDeclareJSON = [aesonQQ|
+predicateSchemaDeclareJSON =
+  [aesonQQ|
 [
   {
     "Predicate": {
@@ -1013,12 +1098,14 @@ data TimeOfDay
   = Int
   | Pico
   deriving (Generic)
+
 instance ToSchema TimeOfDay
+
 instance ToParamSchema TimeOfDay
 
-
 timeOfDaySchemaJSON :: Value
-timeOfDaySchemaJSON = [aesonQQ|
+timeOfDaySchemaJSON =
+  [aesonQQ|
 {
   "example": "12:33:15",
   "type": "string",
@@ -1027,28 +1114,33 @@ timeOfDaySchemaJSON = [aesonQQ|
 |]
 
 timeOfDayParamSchemaJSON :: Value
-timeOfDayParamSchemaJSON = [aesonQQ|
+timeOfDayParamSchemaJSON =
+  [aesonQQ|
 {
   "type": "string",
   "format": "hh:MM:ss"
 }
 |]
 
-
 -- ========================================================================
 -- UnsignedInts
 -- ========================================================================
 data UnsignedInts = UnsignedInts
-  { unsignedIntsUint32 :: Word32
-  , unsignedIntsUint64 :: Word64
-  } deriving (Generic)
+  { unsignedIntsUint32 :: Word32,
+    unsignedIntsUint64 :: Word64
+  }
+  deriving (Generic)
 
 instance ToSchema UnsignedInts where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-    { fieldLabelModifier = map toLower . drop (length "unsignedInts") }
+  declareNamedSchema =
+    genericDeclareNamedSchema
+      defaultSchemaOptions
+        { fieldLabelModifier = map toLower . drop (length "unsignedInts")
+        }
 
 unsignedIntsSchemaJSON :: Value
-unsignedIntsSchemaJSON = [aesonQQ|
+unsignedIntsSchemaJSON =
+  [aesonQQ|
 {
   "type": "object",
   "properties":

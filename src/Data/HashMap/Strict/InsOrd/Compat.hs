@@ -2,6 +2,7 @@
 -- insert-ordered-containers-0.3 compatibility fix to openapi3.
 -- Credit for the design and implementation belongs to the swagger2 authors.
 {-# LANGUAGE CPP #-}
+
 -- |
 -- Module:      Data.HashMap.Strict.InsOrd.Compat
 -- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
@@ -66,70 +67,83 @@
 -- equality matters more than insertion order. Comparing via plain hash maps
 -- makes those tests robust under benign key-order variation. This is a weaker
 -- notion of equality and hopefully will be revisited later.
-module Data.HashMap.Strict.InsOrd.Compat (
-  InsOrdHashMap,
-  -- * Construction
-  empty,
-  singleton,
-  -- * Basic interface
-  null,
-  size,
-  member,
-  lookup,
-  lookupDefault,
-  insert,
-  insertWith,
-  delete,
-  adjust,
-  update,
-  alter,
-  -- * Combine
-  union,
-  unionWith,
-  unionWithKey,
-  unions,
-  -- * Transformations
-  map,
-  mapKeys,
-  traverseKeys,
-  mapWithKey,
-  traverseWithKey,
-  -- ** Unordered
-  unorderedTraverse,
-  unorderedTraverseWithKey,
-  -- * Difference and intersection
-  difference,
-  intersection,
-  intersectionWith,
-  intersectionWithKey,
-  -- * Folds
-  foldl',
-  foldlWithKey',
-  foldr,
-  foldrWithKey,
-  foldMapWithKey,
-  -- ** Unordered
-  unorderedFoldMap,
-  unorderedFoldMapWithKey,
-  -- * Filter
-  filter,
-  filterWithKey,
-  mapMaybe,
-  mapMaybeWithKey,
-  -- * Conversions
-  keys,
-  elems,
-  toList,
-  toRevList,
-  fromList,
-  toHashMap,
-  fromHashMap,
-  -- * Lenses
-  hashMap,
-  unorderedTraversal,
-  -- * Debugging
-  valid,
-  ) where
+module Data.HashMap.Strict.InsOrd.Compat
+  ( InsOrdHashMap,
+
+    -- * Construction
+    empty,
+    singleton,
+
+    -- * Basic interface
+    null,
+    size,
+    member,
+    lookup,
+    lookupDefault,
+    insert,
+    insertWith,
+    delete,
+    adjust,
+    update,
+    alter,
+
+    -- * Combine
+    union,
+    unionWith,
+    unionWithKey,
+    unions,
+
+    -- * Transformations
+    map,
+    mapKeys,
+    traverseKeys,
+    mapWithKey,
+    traverseWithKey,
+
+    -- ** Unordered
+    unorderedTraverse,
+    unorderedTraverseWithKey,
+
+    -- * Difference and intersection
+    difference,
+    intersection,
+    intersectionWith,
+    intersectionWithKey,
+
+    -- * Folds
+    foldl',
+    foldlWithKey',
+    foldr,
+    foldrWithKey,
+    foldMapWithKey,
+
+    -- ** Unordered
+    unorderedFoldMap,
+    unorderedFoldMapWithKey,
+
+    -- * Filter
+    filter,
+    filterWithKey,
+    mapMaybe,
+    mapMaybeWithKey,
+
+    -- * Conversions
+    keys,
+    elems,
+    toList,
+    toRevList,
+    fromList,
+    toHashMap,
+    fromHashMap,
+
+    -- * Lenses
+    hashMap,
+    unorderedTraversal,
+
+    -- * Debugging
+    valid,
+  )
+where
 
 #if !MIN_VERSION_insert_ordered_containers(0,3,0)
 import Prelude hiding (null, lookup, map, foldl', foldr, filter)

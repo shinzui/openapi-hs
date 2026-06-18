@@ -1,47 +1,42 @@
-{-# LANGUAGE OverloadedLists   #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports    #-}
+{-# LANGUAGE PackageImports #-}
+
 module Data.OpenApi.Schema.GeneratorSpec where
 
-import           Prelude                             ()
-import           Prelude.Compat
-
-import           Data.OpenApi
-import           Data.OpenApi.Schema.Generator
-
-import           Control.Lens.Operators
-import           Data.Aeson
-import           Data.Hashable                       (Hashable)
-import           Data.HashMap.Strict                 (HashMap)
-import qualified Data.HashMap.Strict                 as HashMap
-import           "unordered-containers" Data.HashSet (HashSet)
-import qualified "unordered-containers" Data.HashSet as HashSet
-import           Data.Int
-import           Data.IntMap                         (IntMap)
-import           Data.List.NonEmpty.Compat           (NonEmpty (..), nonEmpty)
-import           Data.Map                            (Map, fromList)
-import           Data.Monoid                         (mempty)
-import           Data.Proxy
-import           Data.Proxy
-import           Data.Set                            (Set)
-import qualified Data.Text                           as T
-import qualified Data.Text.Lazy                      as TL
-import           Data.Time
-import           Data.Version                        (Version)
-import           Data.Word
-import           GHC.Generics
-
-import           Test.Hspec
-import           Test.Hspec.QuickCheck
-import           Test.QuickCheck
+import Control.Lens.Operators
+import Data.Aeson
+import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
+import Data.Hashable (Hashable)
+import Data.Int
+import Data.IntMap (IntMap)
+import Data.List.NonEmpty.Compat (NonEmpty (..), nonEmpty)
+import Data.Map (Map, fromList)
+import Data.Monoid (mempty)
+import Data.OpenApi
+import Data.OpenApi.Schema.Generator
+import Data.Proxy
+import Data.Set (Set)
+import Data.Text qualified as T
+import Data.Text.Lazy qualified as TL
+import Data.Time
+import Data.Version (Version)
+import Data.Word
+import GHC.Generics
+import Prelude.Compat
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck
+import "unordered-containers" Data.HashSet (HashSet)
+import "unordered-containers" Data.HashSet qualified as HashSet
+import Prelude ()
 
 shouldValidate :: (FromJSON a, ToSchema a) => Proxy a -> Property
 shouldValidate = validateFromJSON
 
-
 shouldNotValidate :: (FromJSON a, ToSchema a) => Proxy a -> Property
 shouldNotValidate = expectFailure . shouldValidate
-
 
 spec :: Spec
 spec = do
@@ -63,8 +58,8 @@ spec = do
     prop "Word64" $ shouldValidate (Proxy :: Proxy Word64)
     prop "String" $ shouldValidate (Proxy :: Proxy String)
     prop "()" $ shouldValidate (Proxy :: Proxy ())
---    prop "ZonedTime" $ shouldValidate (Proxy :: Proxy ZonedTime)
---    prop "UTCTime" $ shouldValidate (Proxy :: Proxy UTCTime)
+    --    prop "ZonedTime" $ shouldValidate (Proxy :: Proxy ZonedTime)
+    --    prop "UTCTime" $ shouldValidate (Proxy :: Proxy UTCTime)
     prop "T.Text" $ shouldValidate (Proxy :: Proxy T.Text)
     prop "TL.Text" $ shouldValidate (Proxy :: Proxy TL.Text)
     prop "[String]" $ shouldValidate (Proxy :: Proxy [String])
@@ -77,7 +72,7 @@ spec = do
     prop "(NonEmpty Bool)" $ shouldValidate (Proxy :: Proxy (NonEmpty Bool))
     prop "(HashSet Bool)" $ shouldValidate (Proxy :: Proxy (HashSet Bool))
     prop "(Either Int String)" $ shouldValidate (Proxy :: Proxy (Either Int String))
-    xprop "(Int, String)" $ shouldValidate (Proxy :: Proxy (Int, String))  -- TODO(EP-4): prefixItems
+    xprop "(Int, String)" $ shouldValidate (Proxy :: Proxy (Int, String)) -- TODO(EP-4): prefixItems
     prop "(Map String Int)" $ shouldValidate (Proxy :: Proxy (Map String Int))
     prop "(Map T.Text Int)" $ shouldValidate (Proxy :: Proxy (Map T.Text Int))
     prop "(Map TL.Text Bool)" $ shouldValidate (Proxy :: Proxy (Map TL.Text Bool))
@@ -102,71 +97,81 @@ spec = do
 data WrongType = WrongType Bool
 
 instance FromJSON WrongType where
-    parseJSON = withBool "WrongType" $ return . WrongType
+  parseJSON = withBool "WrongType" $ return . WrongType
 
 instance ToSchema WrongType where
-    declareNamedSchema _ = return . NamedSchema (Just "WrongType") $
-                           mempty
-                            & type_ ?~ OpenApiTypeSingle OpenApiObject
-
+  declareNamedSchema _ =
+    return
+      . NamedSchema (Just "WrongType")
+      $ mempty
+      & type_ ?~ OpenApiTypeSingle OpenApiObject
 
 data MissingRequired = MissingRequired
-    { propA :: String
-    , propB :: Bool
-    }
+  { propA :: String,
+    propB :: Bool
+  }
 
 instance FromJSON MissingRequired where
-    parseJSON = withObject "MissingRequired" $ \o ->
-                  MissingRequired
-                    <$> o .: "propA"
-                    <*> o .: "propB"
+  parseJSON = withObject "MissingRequired" $ \o ->
+    MissingRequired
+      <$> o
+      .: "propA"
+      <*> o
+      .: "propB"
 
 instance ToSchema MissingRequired where
-    declareNamedSchema _ = do
-      stringSchema <- declareSchemaRef (Proxy :: Proxy String)
-      boolSchema <- declareSchemaRef (Proxy :: Proxy Bool)
-      return . NamedSchema (Just "MissingRequired") $
-        mempty
-        & type_ ?~ OpenApiTypeSingle OpenApiObject
-        & properties .~ [("propA", stringSchema)
-                        ,("propB", boolSchema)
-                        ]
-        & required .~ ["propA"]
+  declareNamedSchema _ = do
+    stringSchema <- declareSchemaRef (Proxy :: Proxy String)
+    boolSchema <- declareSchemaRef (Proxy :: Proxy Bool)
+    return
+      . NamedSchema (Just "MissingRequired")
+      $ mempty
+      & type_ ?~ OpenApiTypeSingle OpenApiObject
+      & properties
+        .~ [ ("propA", stringSchema),
+             ("propB", boolSchema)
+           ]
+      & required .~ ["propA"]
 
 data MissingProperty = MissingProperty
-    { propC :: String
-    , propD :: Bool
-    }
+  { propC :: String,
+    propD :: Bool
+  }
 
 instance FromJSON MissingProperty where
-    parseJSON = withObject "MissingProperty" $ \o ->
-                  MissingProperty
-                    <$> o .: "propC"
-                    <*> o .: "propD"
+  parseJSON = withObject "MissingProperty" $ \o ->
+    MissingProperty
+      <$> o
+      .: "propC"
+      <*> o
+      .: "propD"
 
 instance ToSchema MissingProperty where
-    declareNamedSchema _ = do
-      stringSchema <- declareSchemaRef (Proxy :: Proxy String)
-      return . NamedSchema (Just "MissingProperty") $
-        mempty
-        & type_ ?~ OpenApiTypeSingle OpenApiObject
-        & properties .~ [("propC", stringSchema)]
-        & required .~ ["propC"]
+  declareNamedSchema _ = do
+    stringSchema <- declareSchemaRef (Proxy :: Proxy String)
+    return
+      . NamedSchema (Just "MissingProperty")
+      $ mempty
+      & type_ ?~ OpenApiTypeSingle OpenApiObject
+      & properties .~ [("propC", stringSchema)]
+      & required .~ ["propC"]
 
 data WrongPropType = WrongPropType
-    { propE :: String
-    }
+  { propE :: String
+  }
 
 instance FromJSON WrongPropType where
-    parseJSON = withObject "WrongPropType" $ \o ->
-                  WrongPropType
-                    <$> o .: "propE"
+  parseJSON = withObject "WrongPropType" $ \o ->
+    WrongPropType
+      <$> o
+      .: "propE"
 
 instance ToSchema WrongPropType where
-    declareNamedSchema _ = do
-      boolSchema <- declareSchemaRef (Proxy :: Proxy Bool)
-      return . NamedSchema (Just "WrongPropType") $
-        mempty
-        & type_ ?~ OpenApiTypeSingle OpenApiObject
-        & properties .~ [("propE", boolSchema)]
-        & required .~ ["propE"]
+  declareNamedSchema _ = do
+    boolSchema <- declareSchemaRef (Proxy :: Proxy Bool)
+    return
+      . NamedSchema (Just "WrongPropType")
+      $ mempty
+      & type_ ?~ OpenApiTypeSingle OpenApiObject
+      & properties .~ [("propE", boolSchema)]
+      & required .~ ["propE"]

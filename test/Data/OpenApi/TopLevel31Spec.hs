@@ -1,27 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE QuasiQuotes #-}
+
 -- | Round-trip coverage for the OpenAPI 3.1 top-level object features added in EP-5:
 -- @Info.summary@, @License.identifier@, @OpenApi.webhooks@, and @PathItem.$ref@.
 module Data.OpenApi.TopLevel31Spec where
 
-import           Control.Lens         hiding ((.=))
-import           Data.Aeson           (Value, decode, encode, object, toJSON, (.=))
-import           Data.Aeson.QQ.Simple (aesonQQ)
-import           Data.Text            (Text)
-import           Test.Hspec
-
-import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
-
-import           Data.OpenApi
-import           Data.OpenApi.Internal
-
-import           SpecCommon
+import Control.Lens hiding ((.=))
+import Data.Aeson (Value, decode, encode, object, toJSON, (.=))
+import Data.Aeson.QQ.Simple (aesonQQ)
+import Data.HashMap.Strict.InsOrd.Compat qualified as InsOrdHashMap
+import Data.OpenApi
+import Data.OpenApi.Internal
+import Data.Text (Text)
+import SpecCommon
+import Test.Hspec
 
 licenseIdentifierExample :: License
 licenseIdentifierExample = "MIT" & identifier ?~ "MIT"
 
 licenseIdentifierExampleJSON :: Value
-licenseIdentifierExampleJSON = [aesonQQ|
+licenseIdentifierExampleJSON =
+  [aesonQQ|
 {
   "name": "MIT",
   "identifier": "MIT"
@@ -29,12 +28,14 @@ licenseIdentifierExampleJSON = [aesonQQ|
 |]
 
 pathItemRefExample :: PathItem
-pathItemRefExample = mempty
-  & ref     ?~ "#/components/pathItems/Foo"
-  & summary ?~ "Shared path item"
+pathItemRefExample =
+  mempty
+    & ref ?~ "#/components/pathItems/Foo"
+    & summary ?~ "Shared path item"
 
 pathItemRefExampleJSON :: Value
-pathItemRefExampleJSON = [aesonQQ|
+pathItemRefExampleJSON =
+  [aesonQQ|
 {
   "$ref": "#/components/pathItems/Foo",
   "summary": "Shared path item"
@@ -42,9 +43,11 @@ pathItemRefExampleJSON = [aesonQQ|
 |]
 
 webhooksExample :: OpenApi
-webhooksExample = mempty
-  & webhooks .~ InsOrdHashMap.fromList
-      [ ("newPet", Inline (mempty & summary ?~ "A new pet was created")) ]
+webhooksExample =
+  mempty
+    & webhooks
+      .~ InsOrdHashMap.fromList
+        [("newPet", Inline (mempty & summary ?~ "A new pet was created"))]
 
 spec :: Spec
 spec = do
@@ -72,6 +75,8 @@ spec = do
   describe "PathItem Object ($ref, OpenAPI 3.1)" $ do
     pathItemRefExample <=> pathItemRefExampleJSON
     it "emits the literal \"$ref\" key, not \"ref\"" $
-      toJSON pathItemRefExample `shouldBe`
-        object [ "$ref" .= ("#/components/pathItems/Foo" :: Text)
-               , "summary" .= ("Shared path item" :: Text) ]
+      toJSON pathItemRefExample
+        `shouldBe` object
+          [ "$ref" .= ("#/components/pathItems/Foo" :: Text),
+            "summary" .= ("Shared path item" :: Text)
+          ]

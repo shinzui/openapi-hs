@@ -4,49 +4,50 @@
 -- Stability:   experimental
 --
 -- Types and functions for working with OpenAPI schema.
-module Data.OpenApi.Schema (
-  -- * Encoding
-  ToSchema(..),
-  declareSchema,
-  declareSchemaRef,
-  toSchema,
-  toSchemaRef,
-  schemaName,
-  toInlinedSchema,
+module Data.OpenApi.Schema
+  ( -- * Encoding
+    ToSchema (..),
+    declareSchema,
+    declareSchemaRef,
+    toSchema,
+    toSchemaRef,
+    schemaName,
+    toInlinedSchema,
 
-  -- * Generic schema encoding
-  genericDeclareNamedSchema,
-  genericDeclareSchema,
-  genericDeclareNamedSchemaNewtype,
-  genericNameSchema,
+    -- * Generic schema encoding
+    genericDeclareNamedSchema,
+    genericDeclareSchema,
+    genericDeclareNamedSchemaNewtype,
+    genericNameSchema,
 
-  -- ** 'Bounded' 'Integral'
-  genericToNamedSchemaBoundedIntegral,
-  toSchemaBoundedIntegral,
+    -- ** 'Bounded' 'Integral'
+    genericToNamedSchemaBoundedIntegral,
+    toSchemaBoundedIntegral,
 
-  -- ** 'Bounded' 'Enum' key mappings
-  declareSchemaBoundedEnumKeyMapping,
-  toSchemaBoundedEnumKeyMapping,
+    -- ** 'Bounded' 'Enum' key mappings
+    declareSchemaBoundedEnumKeyMapping,
+    toSchemaBoundedEnumKeyMapping,
 
-  -- ** Reusing @ToParamSchema@
-  paramSchemaToNamedSchema,
-  paramSchemaToSchema,
+    -- ** Reusing @ToParamSchema@
+    paramSchemaToNamedSchema,
+    paramSchemaToSchema,
 
-  -- * Sketching @Schema@s using @ToJSON@
-  sketchSchema,
-  sketchStrictSchema,
+    -- * Sketching @Schema@s using @ToJSON@
+    sketchSchema,
+    sketchStrictSchema,
 
-  -- * Inlining @Schema@s
-  inlineNonRecursiveSchemas,
-  inlineAllSchemas,
-  inlineSchemas,
-  inlineSchemasWhen,
+    -- * Inlining @Schema@s
+    inlineNonRecursiveSchemas,
+    inlineAllSchemas,
+    inlineSchemas,
+    inlineSchemasWhen,
 
-  -- * Generic encoding configuration
-  SchemaOptions(..),
-  defaultSchemaOptions,
-  fromAesonOptions,
-) where
+    -- * Generic encoding configuration
+    SchemaOptions (..),
+    defaultSchemaOptions,
+    fromAesonOptions,
+  )
+where
 
 import Data.OpenApi.Internal.Schema
 import Data.OpenApi.SchemaOptions

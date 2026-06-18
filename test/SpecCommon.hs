@@ -2,10 +2,9 @@ module SpecCommon where
 
 import Data.Aeson
 import Data.ByteString.Builder (toLazyByteString)
-import qualified Data.Foldable as F
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Vector as Vector
-
+import Data.Foldable qualified as F
+import Data.HashMap.Strict qualified as HashMap
+import Data.Vector qualified as Vector
 import Test.Hspec
 
 (<=>) :: (Eq a, Show a, ToJSON a, FromJSON a, HasCallStack) => a -> Value -> Spec
