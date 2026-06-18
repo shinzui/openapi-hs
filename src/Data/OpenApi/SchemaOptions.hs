@@ -3,7 +3,7 @@
 -- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
 -- Stability:   experimental
 --
--- Generic deriving options for @'ToParamSchema'@ and @'ToSchema'@.
+-- Generic deriving options for @ToParamSchema@ and @ToSchema@.
 module Data.OpenApi.SchemaOptions where
 
 import qualified Data.Aeson.Types as Aeson

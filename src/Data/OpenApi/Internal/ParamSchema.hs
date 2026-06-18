@@ -2,6 +2,13 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- For TypeErrors
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
+-- |
+-- Module:      Data.OpenApi.Internal.ParamSchema
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
+-- Stability:   experimental
+--
+-- Internal module implementing 'ToParamSchema' generic derivation. No API
+-- stability guarantees — import "Data.OpenApi.ParamSchema" instead.
 module Data.OpenApi.Internal.ParamSchema where
 
 import Control.Lens

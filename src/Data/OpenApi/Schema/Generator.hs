@@ -1,5 +1,14 @@
 {-# LANGUAGE OverloadedLists #-}
 
+-- |
+-- Module:      Data.OpenApi.Schema.Generator
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
+-- Stability:   experimental
+--
+-- QuickCheck generators that produce JSON 'Value's conforming to an OpenAPI
+-- 3.1 'Schema'. This is primarily useful for property testing: derive a schema
+-- from a type with 'ToSchema', generate random values that satisfy it, and
+-- check that they parse back via 'FromJSON' (see 'validateFromJSON').
 module Data.OpenApi.Schema.Generator where
 
 import           Prelude                                 ()
@@ -97,15 +106,25 @@ schemaGen defns schema =
           x <- sequence $ gens <> additionalGens
           return . Object $ fromInsOrdHashMap x
 
+-- | Resolve a 'Referenced' value against a set of 'Definitions': return the
+-- value inline if present, otherwise look the reference up by name.
+--
+-- /Partial:/ throws if a 'Ref' names a definition not in the map.
 dereference :: Definitions a -> Referenced a -> a
 dereference _ (Inline a)               = a
 dereference defs (Ref (Reference ref)) = fromJust $ M.lookup ref defs
 
+-- | Generate a random JSON 'Value' conforming to the schema derived from @a@
+-- via its 'ToSchema' instance. Inherits the partiality of 'schemaGen' (it may
+-- 'error' when a schema's type is neither specified nor inferable).
 genValue :: (ToSchema a) => Proxy a -> Gen Value
 genValue p =
  let (defs, NamedSchema _ schema) = runDeclare (declareNamedSchema p) M.empty
  in schemaGen defs schema
 
+-- | Property that asserts every value generated from @a@'s derived schema
+-- parses back successfully through its 'FromJSON' instance — i.e. the schema
+-- and the decoder agree.
 validateFromJSON :: forall a . (ToSchema a, FromJSON a) => Proxy a -> Property
 validateFromJSON p = forAll (genValue p) $
                        \val -> case parseEither parseJSON val of

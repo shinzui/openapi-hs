@@ -98,7 +98,7 @@ looks f = f <$> look
 evalDeclareT :: Monad m => DeclareT d m a -> d -> m a
 evalDeclareT (DeclareT f) d = snd <$> f d
 
--- | Execute @'DeclateT' d m a@ computation,
+-- | Execute @'DeclareT' d m a@ computation,
 -- ignoring result and only producing new output @d@.
 execDeclareT :: Monad m => DeclareT d m a -> d -> m d
 execDeclareT (DeclareT f) d = fst <$> f d
@@ -127,7 +127,7 @@ runDeclare m = runIdentity . runDeclareT m
 evalDeclare :: Declare d a -> d -> a
 evalDeclare m = runIdentity . evalDeclareT m
 
--- | Execute @'Declate' d a@ computation, ignoring result and only
+-- | Execute @'Declare' d a@ computation, ignoring result and only
 -- producing output @d@.
 execDeclare :: Declare d a -> d -> d
 execDeclare m = runIdentity . execDeclareT m

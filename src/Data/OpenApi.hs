@@ -289,7 +289,7 @@ import Data.OpenApi.Internal
 -- }
 --
 -- Additionally, to simplify working with @'Response'@, both @'Operation'@ and @'Responses'@
--- have direct access to it via @'at' code@. Example:
+-- have direct access to it via @at code@. Example:
 --
 -- >>> :{
 -- BSL.putStrLn $ encodePretty $ (mempty :: Operation)
@@ -314,13 +314,13 @@ import Data.OpenApi.Internal
 
 -- $schema
 --
--- @'ParamSchema'@ and @'Schema'@ are the two core types for data model specification.
+-- @'Schema'@ is the core type for data model specification: an OpenAPI 3.1
+-- Schema Object, which is a JSON Schema 2020-12 document. Its @type@ and @items@
+-- keywords are described by @'OpenApiType'@ and @'OpenApiItems'@.
 --
--- @'ParamSchema' t@ specifies all the common properties, available for every data schema.
--- The @t@ parameter imposes some restrictions on @type@ and @items@ properties (see @'OpenApiType'@ and @'OpenApiItems'@).
---
--- @'Schema'@ is used for request and response bodies and allows specifying objects
--- with properties in addition to what @'ParamSchema'@ provides.
+-- The same @'Schema'@ type covers both primitive endpoint parameters and
+-- request/response bodies; unlike OpenAPI 3.0 and earlier, 3.1 has no separate
+-- parameter-schema type.
 --
 -- In most cases you will have a Haskell data type for which you would like to
 -- define a corresponding schema. To facilitate this use case
@@ -329,21 +329,21 @@ import Data.OpenApi.Internal
 --
 -- @'ToParamSchema'@ is intended to be used for primitive API endpoint parameters,
 -- such as query parameters, headers and URL path pieces.
--- Its corresponding value-encoding class is @'ToHttpApiData'@ (from @http-api-data@ package).
+-- Its corresponding value-encoding class is @ToHttpApiData@ (from @http-api-data@ package).
 --
 -- @'ToSchema'@ is used for request and response bodies and mostly differ from
 -- primitive parameters by allowing objects/mappings in addition to primitive types and arrays.
--- Its corresponding value-encoding class is @'ToJSON'@ (from @aeson@ package).
+-- Its corresponding value-encoding class is @ToJSON@ (from @aeson@ package).
 --
 -- While lenses and prisms make it easy to define schemas, it might be that you don't need to:
--- @'ToSchema'@ and @'ToParamSchema'@ classes both have default @'Generic'@-based implementations!
+-- @'ToSchema'@ and @'ToParamSchema'@ classes both have default @Generic@-based implementations!
 --
--- @'ToSchema'@ default implementation is also aligned with @'ToJSON'@ default implementation with
--- the only difference being for sum encoding. @'ToJSON'@ defaults sum encoding to @'defaultTaggedObject'@,
--- while @'ToSchema'@ defaults to something which corresponds to @'ObjectWithSingleField'@. This is due to
--- @'defaultTaggedObject'@ behavior being hard to specify in OpenAPI.
+-- @'ToSchema'@ default implementation is also aligned with @ToJSON@ default implementation with
+-- the only difference being for sum encoding. @ToJSON@ defaults sum encoding to @defaultTaggedObject@,
+-- while @'ToSchema'@ defaults to something which corresponds to @ObjectWithSingleField@. This is due to
+-- @defaultTaggedObject@ behavior being hard to specify in OpenAPI.
 --
--- Here's an example showing @'ToJSON'@–@'ToSchema'@ correspondance:
+-- Here's an example showing @ToJSON@–@'ToSchema'@ correspondance:
 --
 -- >>> data Person = Person { name :: String, age :: Integer } deriving Generic
 -- >>> instance ToJSON Person
@@ -435,6 +435,6 @@ import Data.OpenApi.Internal
 
 -- $validation
 -- While @'ToParamSchema'@ and @'ToSchema'@ provide means to easily obtain schemas for Haskell types,
--- there is no static mechanism to ensure those instances correspond to the @'ToHttpApiData'@ or @'ToJSON'@ instances.
+-- there is no static mechanism to ensure those instances correspond to the @ToHttpApiData@ or @ToJSON@ instances.
 --
--- @"Data.OpenApi.Schema.Validation"@ addresses @'ToJSON'@/@'ToSchema'@ validation.
+-- @"Data.OpenApi.Schema.Validation"@ addresses @ToJSON@/@'ToSchema'@ validation.

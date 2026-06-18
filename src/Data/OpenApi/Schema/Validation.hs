@@ -18,13 +18,13 @@ module Data.OpenApi.Schema.Validation (
 
   ValidationError,
 
-  -- ** Using 'ToJSON' and 'ToSchema'
+  -- ** Using @ToJSON@ and @ToSchema@
   validatePrettyToJSON,
   validateToJSON,
   validateToJSONWithPatternChecker,
   renderValidationErrors,
 
-  -- ** Using 'Value' and 'Schema'
+  -- ** Using @Value@ and @Schema@
   validateJSON,
   validateJSONWithPatternChecker,
 ) where
@@ -78,7 +78,7 @@ import Data.OpenApi.Internal.Schema.Validation
 -- ["expected JSON value of type OpenApiString"]
 --
 -- However, when @'Maybe' a@ is a type of a record field,
--- validation takes @'required'@ property of the @'Schema'@
+-- validation takes @required@ property of the @Schema@
 -- into account:
 --
 -- >>> data Person = Person { name :: String, age :: Maybe Int } deriving Generic

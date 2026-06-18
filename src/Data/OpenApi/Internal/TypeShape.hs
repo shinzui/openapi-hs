@@ -1,4 +1,10 @@
-
+-- |
+-- Module:      Data.OpenApi.Internal.TypeShape
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
+-- Stability:   experimental
+--
+-- Internal type-level machinery classifying the generic shape of a datatype
+-- (used to reject unsupported sum/product mixes). No API stability guarantees.
 module Data.OpenApi.Internal.TypeShape where
 
 import Data.Kind (Type)

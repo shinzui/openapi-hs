@@ -174,10 +174,10 @@ applyTagsFor ops ts swag = swag
   & ops . tags %~ (<> InsOrdHS.fromList (map _tagName ts))
   & tags %~ (<> InsOrdHS.fromList ts)
 
--- | Construct a response with @'Schema'@ while declaring all
--- necessary schema definitions.
---
--- FIXME doc
+-- | Construct a 'Response' whose body, for the given media type, is the schema
+-- derived from @a@, declaring any referenced schema definitions in the process.
+-- The returned 'Response' has an empty description; set one with the 'description'
+-- lens if your spec requires it.
 --
 -- >>> BSL.putStrLn $ encodePretty $ runDeclare (declareResponse "application/json" (Proxy :: Proxy Day)) mempty
 -- [

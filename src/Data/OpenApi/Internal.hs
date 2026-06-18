@@ -1,5 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+-- |
+-- Module:      Data.OpenApi.Internal
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
+-- Stability:   experimental
+--
+-- Internal module defining the OpenAPI 3.1 data model and its JSON instances.
+-- No API stability guarantees — import "Data.OpenApi" instead.
 module Data.OpenApi.Internal where
 
 import Prelude ()
@@ -199,6 +206,8 @@ data Server = Server
   , _serverVariables :: InsOrdHashMap Text ServerVariable
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | A variable substituted into a 'Server' URL template, as described by the
+-- OpenAPI Server Variable Object.
 data ServerVariable = ServerVariable
   { -- | An enumeration of string values to be used if the substitution options
     -- are from a limited set. The array SHOULD NOT be empty.
@@ -239,7 +248,7 @@ data Components = Components
 -- but they will not know which operations and parameters are available.
 data PathItem = PathItem
   { -- | A reference (@$ref@) to an externally-defined Path Item Object,
-    -- whose definition replaces this one, with 'summary' and 'description'
+    -- whose definition replaces this one, with @summary@ and @description@
     -- providing optional overrides. (OpenAPI 3.1)
     _pathItemRef :: Maybe Text
 
@@ -427,6 +436,8 @@ data Style
     -- ^ Provides a simple way of rendering nested objects using form parameters.
   deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | A single encoding definition applied to a request-body property, as
+-- described by the OpenAPI Encoding Object (used inside 'MediaTypeObject').
 data Encoding = Encoding
   { -- | The Content-Type for encoding a specific property.
     -- Default value depends on the property type: for @string@
@@ -467,6 +478,8 @@ data Encoding = Encoding
   , _encodingAllowReserved :: Maybe Bool
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | A list of media types, used wherever the spec lists @produces@/@consumes@-style
+-- content types.
 newtype MimeList = MimeList { getMimeList :: [MediaType] }
   deriving (Eq, Show, Semigroup, Monoid, Typeable)
 
@@ -555,6 +568,8 @@ data Param = Param
     -- should be singleton. mutually exclusive with _paramSchema.
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | An example value for a media type, parameter, or header, as described by
+-- the OpenAPI Example Object.
 data Example = Example
   { -- | Short description for the example.
     _exampleSummary :: Maybe Text
@@ -627,6 +642,9 @@ data OpenApiItems where
   OpenApiItemsBoolean :: Bool              -> OpenApiItems
   deriving (Eq, Show, Typeable, Data)
 
+-- | A single JSON Schema primitive type, i.e. one element of a schema's @type@
+-- keyword. Note 3.1 adds @"null"@ ('OpenApiNull'), used in type arrays to
+-- express nullability.
 data OpenApiType where
   OpenApiString   :: OpenApiType
   OpenApiNumber   :: OpenApiType
@@ -651,6 +669,7 @@ singleType :: OpenApiTypeValue -> Maybe OpenApiType
 singleType (OpenApiTypeSingle t) = Just t
 singleType (OpenApiTypeArray _)  = Nothing
 
+-- | The location (@in@) of a 'Param': query string, header, path, or cookie.
 data ParamLocation
   = -- | Parameters that are appended to the URL.
     -- For example, in @/items?id=###@, the query parameter is @id@.
@@ -665,10 +684,15 @@ data ParamLocation
   | ParamCookie
   deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | The @format@ modifier of a schema or parameter (e.g. @"date-time"@,
+-- @"int64"@). Open-ended free-form text per JSON Schema.
 type Format = Text
 
+-- | The name of a 'Param' or a required property of a 'Schema'.
 type ParamName = Text
 
+-- | An OpenAPI 3.1 Schema Object: a JSON Schema 2020-12 document describing the
+-- shape of a JSON value. This is the central type of the library.
 data Schema = Schema
   { _schemaTitle :: Maybe Text
   , _schemaDescription :: Maybe Text
@@ -743,11 +767,14 @@ data Schema = Schema
   , _schemaDynamicAnchor :: Maybe Text                              -- $dynamicAnchor
   } deriving (Eq, Show, Generic, Data, Typeable)
 
-{-# DEPRECATED _schemaExample "Use _schemaExamples (JSON Schema 'examples') in OpenAPI 3.1" #-}
+{-# DEPRECATED _schemaExample "Use _schemaExamples (JSON Schema examples) in OpenAPI 3.1" #-}
 
 -- | Regex pattern for @string@ type.
 type Pattern = Text
 
+-- | Adds support for polymorphism via the OpenAPI Discriminator Object: names
+-- the payload property that selects which schema (of an @oneOf@/@anyOf@) a value
+-- conforms to.
 data Discriminator = Discriminator
   { -- | The name of the property in the payload that will hold the discriminator value.
     _discriminatorPropertyName :: Text
@@ -763,6 +790,8 @@ data NamedSchema = NamedSchema
   , _namedSchemaSchema :: Schema
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | Metadata for fine-tuning the XML representation of a schema, as described
+-- by the OpenAPI XML Object.
 data Xml = Xml
   { -- | Replaces the name of the element/attribute used for the described schema property.
     -- When defined within the @'OpenApiItems'@ (items), it will affect the name of the individual XML elements within the list.
@@ -806,6 +835,7 @@ data Responses = Responses
   , _responsesResponses :: InsOrdHashMap HttpStatusCode (Referenced Response)
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | An HTTP status code keying an entry in 'Responses' (e.g. @200@, @404@).
 type HttpStatusCode = Int
 
 -- | Describes a single response from an API Operation.
@@ -825,7 +855,7 @@ data Response = Response
 
     -- | A map of operations links that can be followed from the response.
     -- The key of the map is a short name for the link, following the naming
-    -- constraints of the names for 'Component' Objects.
+    -- constraints of the names for @'Components'@ Objects.
   , _responseLinks :: InsOrdHashMap Text (Referenced Link)
   } deriving (Eq, Show, Generic, Data, Typeable)
 
@@ -840,6 +870,7 @@ instance IsString Response where
 newtype Callback = Callback (InsOrdHashMap Text PathItem)
   deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | The name of a response 'Header'.
 type HeaderName = Text
 
 -- | Header fields have the same meaning as for 'Param'.
@@ -866,6 +897,8 @@ data ApiKeyLocation
   | ApiKeyCookie
   deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | Configuration for an @apiKey@ 'SecurityScheme': the name and location of
+-- the key.
 data ApiKeyParams = ApiKeyParams
   { -- | The name of the header or query parameter to be used.
     _apiKeyName :: Text
@@ -880,23 +913,29 @@ type AuthorizationURL = Text
 -- | The token URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
 type TokenURL = Text
 
+-- | Flow-specific parameters for the OAuth2 implicit flow.
 newtype OAuth2ImplicitFlow
   = OAuth2ImplicitFlow {_oAuth2ImplicitFlowAuthorizationUrl :: AuthorizationURL}
   deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | Flow-specific parameters for the OAuth2 resource-owner password flow.
 newtype OAuth2PasswordFlow
   = OAuth2PasswordFlow {_oAuth2PasswordFlowTokenUrl :: TokenURL}
   deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | Flow-specific parameters for the OAuth2 client-credentials flow.
 newtype OAuth2ClientCredentialsFlow
   = OAuth2ClientCredentialsFlow {_oAuth2ClientCredentialsFlowTokenUrl :: TokenURL}
   deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | Flow-specific parameters for the OAuth2 authorization-code flow.
 data OAuth2AuthorizationCodeFlow = OAuth2AuthorizationCodeFlow
   { _oAuth2AuthorizationCodeFlowAuthorizationUrl :: AuthorizationURL
   , _oAuth2AuthorizationCodeFlowTokenUrl :: TokenURL
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | A single OAuth2 flow, as described by the OpenAPI OAuth Flow Object. The
+-- flow-specific parameters @p@ are one of the @OAuth2*Flow@ types above.
 data OAuth2Flow p = OAuth2Flow
   { _oAuth2Params :: p
 
@@ -909,6 +948,8 @@ data OAuth2Flow p = OAuth2Flow
   , _oAuth2Scopes :: InsOrdHashMap Text Text
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | The set of OAuth2 flows supported by a 'SecurityScheme', as described by
+-- the OpenAPI OAuth Flows Object. Each flow is optional.
 data OAuth2Flows = OAuth2Flows
   { -- | Configuration for the OAuth Implicit flow
     _oAuth2FlowsImplicit :: Maybe (OAuth2Flow OAuth2ImplicitFlow)
@@ -925,6 +966,8 @@ data OAuth2Flows = OAuth2Flows
 
 type BearerFormat = Text
 
+-- | The scheme of an @http@ 'SecurityScheme' (an [IANA HTTP auth scheme](https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml)):
+-- @bearer@ (with an optional @bearerFormat@), @basic@, or a custom scheme name.
 data HttpSchemeType
   = HttpSchemeBearer (Maybe BearerFormat)
   | HttpSchemeBasic
@@ -972,6 +1015,8 @@ data SecuritySchemeType
   | SecuritySchemeOpenIdConnect URL
   deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | Defines a security scheme that can be used by an operation, as described by
+-- the OpenAPI Security Scheme Object.
 data SecurityScheme = SecurityScheme
   { -- | The type of the security scheme.
     _securitySchemeType :: SecuritySchemeType
@@ -980,6 +1025,7 @@ data SecurityScheme = SecurityScheme
   , _securitySchemeDescription :: Maybe Text
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | The named 'SecurityScheme' definitions held under @components.securitySchemes@.
 newtype SecurityDefinitions
   = SecurityDefinitions (Definitions SecurityScheme)
   deriving (Eq, Show, Generic, Data, Typeable)
@@ -1030,6 +1076,9 @@ instance Hashable ExternalDocs
 newtype Reference = Reference { getReference :: Text }
   deriving (Eq, Show, Data, Typeable)
 
+-- | Either an inline value of type @a@ or a 'Reference' to one declared
+-- elsewhere (e.g. under @components@). Most spec fields that may be reused are
+-- @'Referenced' a@.
 data Referenced a
   = Ref Reference
   | Inline a
@@ -1038,8 +1087,12 @@ data Referenced a
 instance IsString a => IsString (Referenced a) where
   fromString = Inline . fromString
 
+-- | A URL string, used for links, terms of service, external docs, and the like.
 newtype URL = URL { getUrl :: Text } deriving (Eq, Ord, Show, Hashable, ToJSON, FromJSON, Data, Typeable)
 
+-- | A schema's @additionalProperties@: either a boolean allowing or forbidding
+-- properties beyond those listed, or a 'Schema' every additional property must
+-- satisfy.
 data AdditionalProperties
   = AdditionalPropertiesAllowed Bool
   | AdditionalPropertiesSchema (Referenced Schema)

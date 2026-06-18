@@ -1,3 +1,10 @@
+-- |
+-- Module:      Data.OpenApi.Internal.AesonUtils
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
+-- Stability:   experimental
+--
+-- Internal generic-SOP helpers for deriving the library's aeson instances. No
+-- API stability guarantees.
 module Data.OpenApi.Internal.AesonUtils (
     -- * Generic functions
     AesonDefaultValue(..),

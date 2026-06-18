@@ -28,15 +28,15 @@ module Data.OpenApi.Schema (
   declareSchemaBoundedEnumKeyMapping,
   toSchemaBoundedEnumKeyMapping,
 
-  -- ** Reusing 'ToParamSchema'
+  -- ** Reusing @ToParamSchema@
   paramSchemaToNamedSchema,
   paramSchemaToSchema,
 
-  -- * Sketching @'Schema'@s using @'ToJSON'@
+  -- * Sketching @Schema@s using @ToJSON@
   sketchSchema,
   sketchStrictSchema,
 
-  -- * Inlining @'Schema'@s
+  -- * Inlining @Schema@s
   inlineNonRecursiveSchemas,
   inlineAllSchemas,
   inlineSchemas,

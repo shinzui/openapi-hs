@@ -3,6 +3,13 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- For TypeErrors
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
+-- |
+-- Module:      Data.OpenApi.Internal.Schema
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
+-- Stability:   experimental
+--
+-- Internal module implementing 'ToSchema' generic derivation. No API stability
+-- guarantees — import "Data.OpenApi.Schema" instead.
 module Data.OpenApi.Internal.Schema where
 
 import Prelude ()
@@ -87,7 +94,7 @@ rename name (NamedSchema _ schema) = NamedSchema name schema
 -- >>> import Data.OpenApi.Internal.Utils (encodePretty)
 -- >>> import Data.OpenApi.Lens (name, schema)
 
--- | Convert a type into @'Schema'@.
+-- | Convert a type into @Schema@.
 --
 -- An example type and instance:
 --
@@ -315,7 +322,7 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
           traverse_ usedNames (InsOrdHashMap.lookup name defs)
       Inline subschema -> usedNames subschema
 
--- | Make an unrestrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
+-- | Make an unrestrictive sketch of a @Schema@ based on a @ToJSON@ instance.
 -- Produced schema can be used for further refinement.
 --
 -- >>> BSL.putStrLn $ encodePretty $ sketchSchema "hello"
@@ -405,7 +412,7 @@ sketchSchema = sketch . toJSON
       & required      .~ sort (objectKeys o)
       & properties    .~ fmap (Inline . go) (toInsOrdHashMap o)
 
--- | Make a restrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
+-- | Make a restrictive sketch of a @Schema@ based on a @ToJSON@ instance.
 -- Produced schema uses as much constraints as possible.
 --
 -- >>> BSL.putStrLn $ encodePretty $ sketchStrictSchema "hello"
@@ -619,7 +626,7 @@ instance (ToSchema a, ToSchema b) => ToSchema (Either a b) where
 instance ToSchema () where
   declareNamedSchema _ = pure (NamedSchema Nothing nullarySchema)
 
--- | For 'ToJSON' instance, see <http://hackage.haskell.org/package/uuid-aeson uuid-aeson> package.
+-- | For @ToJSON@ instance, see <http://hackage.haskell.org/package/uuid-aeson uuid-aeson> package.
 instance ToSchema UUID.UUID where
   declareNamedSchema p = pure $ named "UUID" $ paramSchemaToSchema p
     & example ?~ toJSON (UUID.toText UUID.nil)
@@ -771,7 +778,7 @@ genericDeclareNamedSchemaNewtype :: forall a d c s i inner.
   -> Declare (Definitions Schema) NamedSchema
 genericDeclareNamedSchemaNewtype opts f proxy = genericNameSchema opts proxy <$> f (Proxy :: Proxy inner)
 
--- | Declare 'Schema' for a mapping with 'Bounded' 'Enum' keys.
+-- | Declare @Schema@ for a mapping with 'Bounded' 'Enum' keys.
 -- This makes a much more useful schema when there aren't many options for key values.
 --
 -- >>> data ButtonState = Neutral | Focus | Active | Hover | Disabled deriving (Show, Bounded, Enum, Generic)
@@ -818,7 +825,7 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
         & type_ ?~ OpenApiTypeSingle OpenApiObject
         & properties .~ InsOrdHashMap.fromList (map mkPair allKeys)
 
--- | A 'Schema' for a mapping with 'Bounded' 'Enum' keys.
+-- | A @Schema@ for a mapping with 'Bounded' 'Enum' keys.
 -- This makes a much more useful schema when there aren't many options for key values.
 --
 -- >>> data ButtonState = Neutral | Focus | Active | Hover | Disabled deriving (Show, Bounded, Enum, Generic)
@@ -855,7 +862,7 @@ toSchemaBoundedEnumKeyMapping :: forall map key value.
   => Proxy (map key value) -> Schema
 toSchemaBoundedEnumKeyMapping = flip evalDeclare mempty . declareSchemaBoundedEnumKeyMapping
 
--- | A configurable generic @'Schema'@ creator.
+-- | A configurable generic @Schema@ creator.
 genericDeclareSchema :: (Generic a, GToSchema (Rep a), Typeable a) =>
   SchemaOptions -> Proxy a -> Declare (Definitions Schema) Schema
 genericDeclareSchema opts proxy = _namedSchemaSchema <$> genericDeclareNamedSchema opts proxy
@@ -883,7 +890,7 @@ genericDeclareNamedSchema opts _ =
     name = datatypeNameModifier opts orig
 
 
--- | Derive a 'Generic'-based name for a datatype and assign it to a given 'Schema'.
+-- | Derive a 'Generic'-based name for a datatype and assign it to a given @Schema@.
 genericNameSchema :: forall a d f.
   (Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> Proxy a -> Schema -> NamedSchema
@@ -897,12 +904,12 @@ gdatatypeSchemaName opts _ = case orig of
     orig = datatypeName (Proxy3 :: Proxy3 d f a)
     name = datatypeNameModifier opts orig
 
--- | Construct 'NamedSchema' usinng 'ToParamSchema'.
+-- | Construct 'NamedSchema' using @ToParamSchema@.
 paramSchemaToNamedSchema :: (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d) =>
   SchemaOptions -> Proxy a -> NamedSchema
 paramSchemaToNamedSchema opts proxy = genericNameSchema opts proxy (paramSchemaToSchema proxy)
 
--- | Construct 'Schema' usinng 'ToParamSchema'.
+-- | Construct @Schema@ using @ToParamSchema@.
 paramSchemaToSchema :: ToParamSchema a => Proxy a -> Schema
 paramSchemaToSchema = toParamSchema
 

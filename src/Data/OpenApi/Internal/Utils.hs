@@ -1,3 +1,10 @@
+-- |
+-- Module:      Data.OpenApi.Internal.Utils
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
+-- Stability:   experimental
+--
+-- Internal shared utilities (Template Haskell lens helpers, JSON/monoid
+-- combinators). No API stability guarantees.
 module Data.OpenApi.Internal.Utils where
 
 import Prelude ()

@@ -1,5 +1,12 @@
 {-# LANGUAGE CPP #-}
 
+-- |
+-- Module:      Data.OpenApi.Aeson.Compat
+-- Maintainer:  Nadeem Bitar <nadeem@gmail.com>
+-- Stability:   experimental
+--
+-- Internal compatibility shims over aeson's @Key@/@KeyMap@ API across versions.
+-- No API stability guarantees.
 module Data.OpenApi.Aeson.Compat where
 
 #if MIN_VERSION_aeson(2,0,0)

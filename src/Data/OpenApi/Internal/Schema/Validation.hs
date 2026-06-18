@@ -48,7 +48,7 @@ import Data.OpenApi.Lens
 -- $setup
 -- >>> import Data.OpenApi.Internal.Schema.Validation
 
--- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value.
+-- | Validate @ToJSON@ instance matches @ToSchema@ for a given value.
 -- This can be used with QuickCheck to ensure those instances are coherent:
 --
 -- prop> validateToJSON (x :: Int) == []
@@ -64,7 +64,7 @@ validatePrettyToJSON = renderValidationErrors validateToJSON
 validateToJSON :: forall a. (ToJSON a, ToSchema a) => a -> [ValidationError]
 validateToJSON = validateToJSONWithPatternChecker (\_pattern _str -> True)
 
--- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value and pattern checker.
+-- | Validate @ToJSON@ instance matches @ToSchema@ for a given value and pattern checker.
 -- This can be used with QuickCheck to ensure those instances are coherent.
 --
 -- For validation without patterns see @'validateToJSON'@.  See also:
@@ -150,7 +150,7 @@ renderValidationErrors f x =
     ppJSONString = TL.unpack . TL.decodeUtf8 . encodePretty
     (refs_, schema_) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
 
--- | Validate JSON @'Value'@ against OpenAPI @'Schema'@.
+-- | Validate JSON @Value@ against OpenAPI @Schema@.
 --
 -- prop> validateJSON mempty (toSchema (Proxy :: Proxy Int)) (toJSON (x :: Int)) == []
 --
@@ -159,7 +159,7 @@ renderValidationErrors f x =
 validateJSON :: Definitions Schema -> Schema -> Value -> [ValidationError]
 validateJSON = validateJSONWithPatternChecker (\_pattern _str -> True)
 
--- | Validate JSON @'Value'@ agains OpenAPI @'ToSchema'@ for a given value and pattern checker.
+-- | Validate JSON @Value@ against OpenAPI @ToSchema@ for a given value and pattern checker.
 --
 -- For validation without patterns see @'validateJSON'@.
 validateJSONWithPatternChecker :: (Pattern -> Text -> Bool) -> Definitions Schema -> Schema -> Value -> [ValidationError]
@@ -291,7 +291,7 @@ validateWithSchemaRef :: Referenced Schema -> Value -> Validation s ()
 validateWithSchemaRef (Ref ref)  js = withRef ref $ \sch -> sub sch (validateWithSchema js)
 validateWithSchemaRef (Inline s) js = sub s (validateWithSchema js)
 
--- | Validate JSON @'Value'@ with OpenAPI @'Schema'@.
+-- | Validate JSON @Value@ with OpenAPI @Schema@.
 validateWithSchema :: Value -> Validation Schema ()
 validateWithSchema val = do
   validateSchemaType val
