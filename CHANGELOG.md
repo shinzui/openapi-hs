@@ -18,6 +18,10 @@
 - Schema validation understands the new 3.1 keywords (type arrays, numeric
   exclusive bounds, `prefixItems`, `contains*`, `if`/`then`/`else`, `const`, and a
   best-effort `unevaluated*`).
+- The `example` executable now emits a complete OpenAPI 3.1 contract (with `info`,
+  a server, top-level `tags`, and a unique `operationId` per operation) to stdout, so
+  its output lints cleanly under [`vacuum`](https://quobix.com/vacuum/) for external,
+  authoritative conformance checking.
 - **Build:** Cabal-only on GHC 9.12.4/9.14.1; removed `stack.yaml` and the custom
   `Setup.hs`/`cabal-doctest` machinery; `build-type: Simple`.
 - **Renamed** the package from `openapi3` to `openapi-hs` (module namespace

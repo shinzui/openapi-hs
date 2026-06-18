@@ -158,7 +158,7 @@ executable example
   hs-source-dirs:   examples
   main-is:          hackage.hs
   default-language: GHC2024
-  build-depends:    base, aeson, lens, openapi-hs, text
+  build-depends:    base, aeson, bytestring, lens, openapi-hs, text
 
 source-repository head
   type:     git

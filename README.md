@@ -162,6 +162,29 @@ worked examples, and pitfalls.
 Runnable examples live in the [`examples/`](/examples) directory. Generated specifications can be
 explored interactively in any OpenAPI 3.1 viewer or editor.
 
+## Validation
+
+The library's own correctness is checked at three complementary levels:
+
+1. **Round-trip** — the test suite encodes documents and decodes them back through
+   `FromJSON OpenApi`, which rejects any `openapi` version outside `3.1.0 … 3.1.1`, then
+   compares for semantic equality.
+2. **Schema conformance** — `Data.OpenApi.Schema.Validation` (`validateToJSON` /
+   `validateJSON`) checks that values conform to their derived 3.1 schemas, including the new
+   keywords.
+3. **Authoritative conformance** — the `example` executable emits a complete OpenAPI 3.1
+   contract (with `info`, a server, top-level `tags`, and a unique `operationId` per operation)
+   that lints cleanly under [`vacuum`](https://quobix.com/vacuum/):
+
+   ```bash
+   cabal run example > openapi.json
+   nix run nixpkgs#vacuum-go -- lint -d openapi.json
+   ```
+
+   The first two layers are *self-referential* — they confirm a document agrees with this
+   library's own model of OpenAPI 3.1. `vacuum` is an external, authoritative linter, so it
+   independently catches encoder output that is valid JSON but non-conformant OpenAPI.
+
 ## Building and developing
 
 This repository ships a Nix flake providing a pinned GHC 9.12.4 toolchain. From the repository

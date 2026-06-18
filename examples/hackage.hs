@@ -2,8 +2,22 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+
+-- | Emit a representative API's OpenAPI 3.1 document as JSON to stdout.
+--
+-- Besides serving as a runnable example, this feeds Layer-3 (external,
+-- authoritative) validation:
+--
+-- > cabal run example > openapi.json
+-- > nix run nixpkgs#vacuum-go -- lint -d openapi.json
+--
+-- The document is deliberately a complete OpenAPI 3.1 contract — it carries
+-- @info@ (title/version/description), a @server@, top-level @tags@, and a
+-- unique @operationId@ per operation — so an external linter has a realistic
+-- document to validate rather than a bare skeleton.
 module Main where
 
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Control.Lens
 import Data.Aeson
 import Data.Proxy
@@ -63,10 +77,22 @@ declareHackageOpenApi = do
   packagesResponse      <- declareResponse "application/json" (Proxy :: Proxy [Package])
 
   return $ mempty
+    & info . title       .~ "Hackage API"
+    & info . version     .~ "1.0.0"
+    & info . description ?~ "A small, representative Hackage-style read API."
+    & servers            .~ [ "https://hackage.haskell.org" ]
+    & tags               .~
+        [ Tag "users"    (Just "User lookup operations") Nothing
+        , Tag "packages" (Just "Package operations")     Nothing
+        ]
     & paths .~
         [ ("/users", mempty & get ?~ (mempty
+            & operationId ?~ "getUsers"
+            & tags        .~ [ "users" ]
             & at 200 ?~ Inline userSummaryResponse))
         , ("/user/{username}", mempty & get ?~ (mempty
+            & operationId ?~ "getUser"
+            & tags        .~ [ "users" ]
             & parameters .~ [ Inline $ mempty
                 & name .~ "username"
                 & required ?~ True
@@ -74,9 +100,11 @@ declareHackageOpenApi = do
                 & schema ?~ Inline usernameParamSchema ]
             & at 200 ?~ Inline userDetailedResponse))
         , ("/packages", mempty & get ?~ (mempty
+            & operationId ?~ "getPackages"
+            & tags        .~ [ "packages" ]
             & at 200 ?~ Inline packagesResponse))
         ]
 
 main :: IO ()
-main = putStrLn . read . show . encode $ hackageOpenApi
+main = BL.putStrLn (encode hackageOpenApi)
 
