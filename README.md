@@ -207,11 +207,6 @@ worked examples.
 The design and implementation strategy behind the 3.1 work is documented in
 **[`docs/OPENAPI31_MIGRATION_PLAN.md`](https://github.com/shinzui/openapi-hs/blob/master/docs/OPENAPI31_MIGRATION_PLAN.md)**.
 
-## Contributing
-
-Bug reports, fixes, documentation improvements, and other contributions are welcome. Please open
-an issue or pull request on the [GitHub issue tracker](https://github.com/shinzui/openapi-hs/issues).
-
 ## License
 
 `openapi-hs` retains the original **BSD-3-Clause** license of the upstream
