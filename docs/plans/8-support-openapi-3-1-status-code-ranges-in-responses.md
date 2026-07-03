@@ -53,13 +53,18 @@ Use a checklist to summarize granular steps. Every stopping point must be docume
 even if it requires splitting a partially completed task into two ("done" vs. "remaining").
 This section must always reflect the actual current state of the work.
 
-- [ ] Milestone 1: Replace `type HttpStatusCode = Int` with the `HttpStatusCode` /
+- [x] Milestone 1: Replace `type HttpStatusCode = Int` with the `HttpStatusCode` /
       `StatusCodeRange` data types plus `Num`, `Eq`, `Ord`, `Hashable`, `Show`, `Data`,
       `Generic`, `Typeable` instances in `src/Data/OpenApi/Internal.hs`. Library compiles.
-- [ ] Milestone 2: Add `ToJSONKey` / `FromJSONKey` instances and the
+      Completed 2026-07-03T23:47:47Z; `nix develop -c cabal build openapi-hs` passed
+      after Milestones 1-3.
+- [x] Milestone 2: Add `ToJSONKey` / `FromJSONKey` instances and the
       `renderHttpStatusCode` / `parseHttpStatusCode` helpers so `"4XX"` round-trips.
-- [ ] Milestone 3: Widen the export list in `src/Data/OpenApi.hs` to expose the new
-      constructors and the range type.
+      Completed 2026-07-03T23:47:47Z; the build passed after adding the key instances plus
+      value-level `ToJSON` / `FromJSON` instances required by Aeson 2.2's default list-key
+      methods.
+- [x] Milestone 3: Widen the export list in `src/Data/OpenApi.hs` to expose the new
+      constructors and the range type. Completed 2026-07-03T23:47:47Z.
 - [ ] Milestone 4: Add tests — a `Responses` round-trip with a `4XX` key; a regression decode
       of the issue's JSON; unit tests for the key parser/renderer; a mixed `Responses`
       round-trip covering `default` + explicit code + inline range + `$ref` range (closing an
@@ -74,7 +79,29 @@ This section must always reflect the actual current state of the work.
 Document unexpected behaviors, bugs, optimizations, or insights discovered during
 implementation. Provide concise evidence.
 
-(None yet.)
+- Discovery: Aeson 2.2.5.0's `ToJSONKey` and `FromJSONKey` classes have default
+  `toJSONKeyList` / `fromJSONKeyList` methods that require ordinary `ToJSON` /
+  `FromJSON` instances when the list-key methods are not overridden. The first build failed
+  until `HttpStatusCode` gained value-level instances that encode and decode the same text
+  form used for object keys.
+  Evidence:
+  ```text
+  src/Data/OpenApi/Internal.hs:885:10: error:
+      No instance for 'ToJSON HttpStatusCode'
+        arising from a use of '$dmtoJSONKeyList'
+  src/Data/OpenApi/Internal.hs:888:10: error:
+      No instance for 'FromJSON HttpStatusCode'
+        arising from a use of '$dmfromJSONKeyList'
+  ```
+
+- Discovery: `DeriveAnyClass` was not enabled for `src/Data/OpenApi/Internal.hs` despite
+  the package default language being GHC2024, so deriving `Hashable` with the `anyclass`
+  strategy required an explicit file pragma.
+  Evidence:
+  ```text
+  Can't make a derived instance of 'Hashable HttpStatusCode' with the anyclass strategy
+  Suggested fix: Perhaps you intended to use the 'DeriveAnyClass' extension
+  ```
 
 
 ## Decision Log
@@ -135,6 +162,14 @@ Record every decision made while working on the plan.
   already a large breaking release (package rename, 3.0→3.1 migration). The `HttpStatusCode`
   change is breaking (its definition changes from a type alias to a data type), so it belongs
   with the other `4.0.0` breaking notes.
+  Date: 2026-07-03
+
+- Decision: Add ordinary `ToJSON` / `FromJSON HttpStatusCode` instances that use
+  `renderHttpStatusCode` and `parseHttpStatusCode`, in addition to the map-key instances.
+  Rationale: Aeson 2.2.5.0's key classes require these value-level instances for their
+  default list-key methods unless every list-key method is implemented manually. Encoding the
+  value as the same string form (`"200"`, `"4XX"`) keeps the representation consistent and
+  avoids widening the public API with extra helpers.
   Date: 2026-07-03
 
 

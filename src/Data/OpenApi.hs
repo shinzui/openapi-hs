@@ -92,7 +92,8 @@ module Data.OpenApi
     -- ** Responses
     Responses (..),
     Response (..),
-    HttpStatusCode,
+    HttpStatusCode (..),
+    StatusCodeRange (..),
     Link (..),
     Callback (..),
 

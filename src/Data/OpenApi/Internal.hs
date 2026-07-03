@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- |
@@ -20,6 +21,7 @@ import qualified Data.Aeson.KeyMap     as KeyMap
 #endif
 import Control.Monad (unless)
 import Data.Aeson.Types qualified as JSON
+import Data.Char (isDigit)
 import Data.Data
   ( Constr,
     Data (..),
@@ -792,8 +794,106 @@ data Responses = Responses
   }
   deriving stock (Eq, Show, Generic, Data, Typeable)
 
--- | An HTTP status code keying an entry in 'Responses' (e.g. @200@, @404@).
-type HttpStatusCode = Int
+-- | A key in a 'Responses' map. Per the OpenAPI 3.1 specification a response
+-- may be keyed either by an explicit HTTP status code (e.g. @200@, @404@) or by
+-- a status-code /range/ that stands for a whole class of responses. A range is
+-- written as a single leading digit @1@-@5@ followed by two literal uppercase
+-- @X@ characters: @1XX@, @2XX@, @3XX@, @4XX@, @5XX@.
+--
+-- The @default@ key is represented separately by '_responsesDefault' and is
+-- never stored in the map, so it is not a constructor here.
+--
+-- A 'Num' instance is provided so that ordinary integer literals continue to
+-- denote explicit status codes: writing @200@ where an 'HttpStatusCode' is
+-- expected yields @'StatusCode' 200@. Only 'fromInteger' is meaningful; the
+-- arithmetic operators are defined for totality (projecting to 'Int') but have
+-- no real-world meaning for status codes.
+data HttpStatusCode
+  = -- | An explicit status code such as @200@ or @404@.
+    StatusCode Int
+  | -- | A whole class of responses, e.g. @'StatusRange' 'R4XX'@ for the @4XX@ key.
+    StatusRange StatusCodeRange
+  deriving stock (Eq, Ord, Show, Generic, Data, Typeable)
+  deriving anyclass (Hashable)
+
+-- | The five status-code range classes permitted by OpenAPI 3.1, one per
+-- leading digit. @'R1XX'@ serializes as @1XX@, @'R2XX'@ as @2XX@, and so on.
+data StatusCodeRange
+  = R1XX
+  | R2XX
+  | R3XX
+  | R4XX
+  | R5XX
+  deriving stock (Eq, Ord, Show, Enum, Bounded, Generic, Data, Typeable)
+  deriving anyclass (Hashable)
+
+-- | Project an 'HttpStatusCode' onto a representative integer: explicit codes map
+-- to themselves; a range maps to its hundreds value (@R1XX -> 100@, ..., @R5XX ->
+-- 500@). Used only to give the 'Num' instance total arithmetic; not exported.
+httpStatusCodeToInt :: HttpStatusCode -> Int
+httpStatusCodeToInt (StatusCode n) = n
+httpStatusCodeToInt (StatusRange r) = (fromEnum r + 1) * 100
+
+-- | Integer literals denote explicit status codes (see 'HttpStatusCode'). The
+-- non-'fromInteger' methods are total but not semantically meaningful.
+instance Num HttpStatusCode where
+  fromInteger = StatusCode . fromInteger
+  a + b = StatusCode (httpStatusCodeToInt a + httpStatusCodeToInt b)
+  a - b = StatusCode (httpStatusCodeToInt a - httpStatusCodeToInt b)
+  a * b = StatusCode (httpStatusCodeToInt a * httpStatusCodeToInt b)
+  abs = StatusCode . abs . httpStatusCodeToInt
+  signum = StatusCode . signum . httpStatusCodeToInt
+  negate = StatusCode . negate . httpStatusCodeToInt
+
+-- | Render an 'HttpStatusCode' as the text used for a JSON object key.
+renderHttpStatusCode :: HttpStatusCode -> Text
+renderHttpStatusCode (StatusCode n) = Text.pack (show n)
+renderHttpStatusCode (StatusRange r) = case r of
+  R1XX -> "1XX"
+  R2XX -> "2XX"
+  R3XX -> "3XX"
+  R4XX -> "4XX"
+  R5XX -> "5XX"
+
+-- | Parse a JSON object key into an 'HttpStatusCode'. Accepts a run of ASCII
+-- digits as an explicit code, or the exact forms @1XX@...@5XX@ (uppercase @X@)
+-- as a range. Anything else is rejected with a descriptive message.
+parseHttpStatusCode :: Text -> Either String HttpStatusCode
+parseHttpStatusCode t = case parseRange t of
+  Just r -> Right (StatusRange r)
+  Nothing
+    | not (Text.null t) && Text.all isDigit t ->
+        case readMaybe (Text.unpack t) of
+          Just n -> Right (StatusCode n)
+          Nothing -> Left err
+    | otherwise -> Left err
+  where
+    err =
+      "Invalid Responses key "
+        <> show (Text.unpack t)
+        <> "; expected an HTTP status code (e.g. \"200\") or a range (\"1XX\"...\"5XX\")."
+    parseRange x = case Text.unpack x of
+      [d, 'X', 'X'] -> case d of
+        '1' -> Just R1XX
+        '2' -> Just R2XX
+        '3' -> Just R3XX
+        '4' -> Just R4XX
+        '5' -> Just R5XX
+        _ -> Nothing
+      _ -> Nothing
+
+instance ToJSON HttpStatusCode where
+  toJSON = String . renderHttpStatusCode
+  toEncoding = toEncoding . renderHttpStatusCode
+
+instance ToJSONKey HttpStatusCode where
+  toJSONKey = JSON.toJSONKeyText renderHttpStatusCode
+
+instance FromJSON HttpStatusCode where
+  parseJSON = withText "HttpStatusCode" (either fail pure . parseHttpStatusCode)
+
+instance FromJSONKey HttpStatusCode where
+  fromJSONKey = FromJSONKeyTextParser (either fail pure . parseHttpStatusCode)
 
 -- | Describes a single response from an API Operation.
 data Response = Response
