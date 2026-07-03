@@ -49,7 +49,21 @@ prop_schema31_roundtrip :: Property
 prop_schema31_roundtrip = forAll genSchema $ \s ->
   (decode (encode s) :: Maybe Schema) === Just s
 
+-- | Every key the renderer can produce must parse back to the same value.
+genHttpStatusCode :: Gen HttpStatusCode
+genHttpStatusCode =
+  oneof
+    [ StatusCode <$> choose (100, 599),
+      StatusRange <$> elements [minBound .. maxBound]
+    ]
+
+prop_httpStatusCode_key_roundtrip :: Property
+prop_httpStatusCode_key_roundtrip = forAll genHttpStatusCode $ \c ->
+  parseHttpStatusCode (renderHttpStatusCode c) === Right c
+
 spec :: Spec
-spec =
+spec = do
   describe "Schema 3.1 round-trip" $
     prop "decode . encode == Just for random 3.1 schemas" prop_schema31_roundtrip
+  describe "HttpStatusCode key round-trip" $
+    prop "parse . render == Right for codes and ranges" prop_httpStatusCode_key_roundtrip

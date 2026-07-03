@@ -32,6 +32,40 @@ spec = do
   describe "Definitions Object" $ definitionsExample <=> definitionsExampleJSON
   describe "Parameters Definition Object" $ paramsDefinitionExample <=> paramsDefinitionExampleJSON
   describe "Responses Definition Object" $ responsesDefinitionExample <=> responsesDefinitionExampleJSON
+  describe "Status Code Range Responses" $ statusRangeResponsesExample <=> statusRangeResponsesExampleJSON
+  describe "Responses with default, exact, range and $ref" $ responsesMixedExample <=> responsesMixedExampleJSON
+  describe "Issue #1: range status code parses"
+    $ it "decodes an operation whose responses include a 4XX range"
+    $ do
+      let js =
+            [aesonQQ|
+{
+  "operationId": "test_endpoint",
+  "responses": {
+    "200": { "description": "200 response" },
+    "429": { "description": "too many requests" },
+    "4XX": { "description": "client error" }
+  }
+}
+|]
+      case fromJSON js :: Result Operation of
+        Success op ->
+          (op ^. responses . at (StatusRange R4XX))
+            `shouldBe` Just (Inline (mempty & description .~ "client error"))
+        Error e -> expectationFailure ("expected successful parse, got: " <> e)
+  describe "Responses key parsing" $ do
+    it "rejects a lowercase range key"
+      $ (fromJSON [aesonQQ| { "4xx": { "description": "x" } } |] :: Result Responses)
+      `shouldSatisfy` isError
+    it "rejects an out-of-range class key"
+      $ (fromJSON [aesonQQ| { "6XX": { "description": "x" } } |] :: Result Responses)
+      `shouldSatisfy` isError
+    it "accepts every valid range class"
+      $ ( fromJSON
+            [aesonQQ| { "1XX": {"description":"a"}, "5XX": {"description":"b"} } |] ::
+            Result Responses
+        )
+      `shouldSatisfy` isSuccess
   describe "Security Definitions Object" $ securityDefinitionsExample <=> securityDefinitionsExampleJSON
   describe "OAuth2 Security Definitions with merged Scope" $ oAuth2SecurityDefinitionsExample <=> oAuth2SecurityDefinitionsExampleJSON
   describe "OAuth2 Security Definitions with empty Scope" $ oAuth2SecurityDefinitionsEmptyExample <=> oAuth2SecurityDefinitionsEmptyExampleJSON
@@ -54,6 +88,14 @@ spec = do
 
 main :: IO ()
 main = hspec spec
+
+isError :: Result a -> Bool
+isError (Error _) = True
+isError _ = False
+
+isSuccess :: Result a -> Bool
+isSuccess (Success _) = True
+isSuccess _ = False
 
 -- =======================================================================
 -- Info object
@@ -515,6 +557,40 @@ responsesDefinitionExampleJSON =
   "IllegalInput": {
     "description": "Illegal input for operation."
   }
+}
+|]
+
+statusRangeResponsesExample :: Responses
+statusRangeResponsesExample =
+  mempty
+    & at 200 ?~ Inline (mempty & description .~ "OK")
+    & at (StatusRange R4XX) ?~ Inline (mempty & description .~ "Client error")
+
+statusRangeResponsesExampleJSON :: Value
+statusRangeResponsesExampleJSON =
+  [aesonQQ|
+{
+  "200": { "description": "OK" },
+  "4XX": { "description": "Client error" }
+}
+|]
+
+responsesMixedExample :: Responses
+responsesMixedExample =
+  mempty
+    & default_ ?~ Inline (mempty & description .~ "Unexpected error")
+    & at 200 ?~ Inline (mempty & description .~ "OK")
+    & at (StatusRange R4XX) ?~ Inline (mempty & description .~ "Client error")
+    & at (StatusRange R5XX) ?~ Ref (Reference "ServerError")
+
+responsesMixedExampleJSON :: Value
+responsesMixedExampleJSON =
+  [aesonQQ|
+{
+  "default": { "description": "Unexpected error" },
+  "200": { "description": "OK" },
+  "4XX": { "description": "Client error" },
+  "5XX": { "$ref": "#/components/responses/ServerError" }
 }
 |]
 

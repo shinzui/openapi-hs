@@ -65,11 +65,15 @@ This section must always reflect the actual current state of the work.
       methods.
 - [x] Milestone 3: Widen the export list in `src/Data/OpenApi.hs` to expose the new
       constructors and the range type. Completed 2026-07-03T23:47:47Z.
-- [ ] Milestone 4: Add tests — a `Responses` round-trip with a `4XX` key; a regression decode
+- [x] Milestone 4: Add tests — a `Responses` round-trip with a `4XX` key; a regression decode
       of the issue's JSON; unit tests for the key parser/renderer; a mixed `Responses`
       round-trip covering `default` + explicit code + inline range + `$ref` range (closing an
       existing coverage gap); and a QuickCheck property that the key codec round-trips, added to
-      `test/Data/OpenApi/Schema/RoundtripSpec.hs`.
+      `test/Data/OpenApi/Schema/RoundtripSpec.hs`. Completed 2026-07-03T23:54:57Z; the
+      focused filters passed: `Status Code Range Responses` (5 examples), `Responses with
+      default, exact, range and $ref` (5 examples), `Issue #1` (1 example), `Responses key
+      parsing` (3 examples), and `HttpStatusCode key round-trip` (1 QuickCheck property,
+      100 tests).
 - [ ] Milestone 5: Update `CHANGELOG.md` and confirm the whole suite is green under
       `nix develop` / `cabal`.
 
