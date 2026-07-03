@@ -9,6 +9,11 @@
 - **Breaking:** removed the tuple `items` array; use `prefixItems` + `items: false`.
   Generic `ToSchema` derivation for Haskell tuples (and `sketchSchema`/`sketchStrictSchema`)
   now emits this positional `prefixItems` form, preserving each member's type.
+- **Breaking:** `HttpStatusCode` is now a data type (`StatusCode Int | StatusRange
+  StatusCodeRange`) instead of `type HttpStatusCode = Int`, so a `Responses` map can hold
+  OpenAPI 3.1 status-code range keys (`1XX`...`5XX`) in addition to explicit codes. A `Num`
+  instance keeps integer literals such as `at 200` and `setResponse 404` working unchanged.
+  Fixes #1.
 - Added JSON Schema 2020-12 fields: `prefixItems`, `const`, `if`/`then`/`else`,
   `contains`/`minContains`/`maxContains`, `unevaluatedProperties`/`unevaluatedItems`,
   `dependentSchemas`/`dependentRequired`, `propertyNames`, content keywords, `examples`,

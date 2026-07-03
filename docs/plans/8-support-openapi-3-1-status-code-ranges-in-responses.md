@@ -74,8 +74,9 @@ This section must always reflect the actual current state of the work.
       default, exact, range and $ref` (5 examples), `Issue #1` (1 example), `Responses key
       parsing` (3 examples), and `HttpStatusCode key round-trip` (1 QuickCheck property,
       100 tests).
-- [ ] Milestone 5: Update `CHANGELOG.md` and confirm the whole suite is green under
-      `nix develop` / `cabal`.
+- [x] Milestone 5: Update `CHANGELOG.md` and confirm the whole suite is green under
+      `nix develop` / `cabal`. Completed 2026-07-03T23:56:06Z; `nix develop -c cabal
+      test spec` passed with 463 examples and 0 failures.
 
 
 ## Surprises & Discoveries
@@ -182,7 +183,22 @@ Record every decision made while working on the plan.
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion.
 Compare the result against the original purpose.
 
-(To be filled during and after implementation.)
+- Outcome: Completed 2026-07-03. `Responses` maps now support OpenAPI 3.1 status-code
+  range keys through `HttpStatusCode = StatusCode Int | StatusRange StatusCodeRange`.
+  Existing integer-literal call sites continue to work through the `Num HttpStatusCode`
+  instance, while users can construct range keys explicitly with `StatusRange R1XX` through
+  `StatusRange R5XX`. Encoding preserves range keys such as `"4XX"`, and decoding rejects
+  malformed range spellings such as `"4xx"` and `"6XX"`.
+
+- Outcome: The reported issue #1 scenario is covered by a regression test that decodes an
+  `Operation` whose `responses` object contains `200`, `429`, and `4XX`, then verifies the
+  parsed operation stores the `4XX` entry under `StatusRange R4XX`. Additional tests cover a
+  `Responses` round-trip with a range key, a mixed `default` / explicit / range / `$ref`
+  object, parser rejection cases, and a QuickCheck parse/render round-trip property.
+
+- Validation: `nix develop -c cabal build openapi-hs` passed after the implementation
+  milestones. `nix develop -c cabal test spec` passed at completion with 463 examples and
+  0 failures.
 
 
 ## Context and Orientation
