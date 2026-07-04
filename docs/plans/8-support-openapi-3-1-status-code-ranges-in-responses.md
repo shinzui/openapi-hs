@@ -76,7 +76,9 @@ This section must always reflect the actual current state of the work.
       100 tests).
 - [x] Milestone 5: Update `CHANGELOG.md` and confirm the whole suite is green under
       `nix develop` / `cabal`. Completed 2026-07-03T23:56:06Z; `nix develop -c cabal
-      test spec` passed with 463 examples and 0 failures.
+      test spec` passed with 463 examples and 0 failures. Corrected after review to place
+      the changelog note under a new `4.1.0` section because `4.0.0` had already been
+      released.
 
 
 ## Surprises & Discoveries
@@ -169,6 +171,14 @@ Record every decision made while working on the plan.
   with the other `4.0.0` breaking notes.
   Date: 2026-07-03
 
+- Decision: Supersede the previous changelog placement decision and open a new `4.1.0`
+  section for this change.
+  Rationale: The user clarified that `4.0.0` had already been released. Since the
+  `HttpStatusCode` change is a breaking API change after that release, it must not be added
+  retroactively to the `4.0.0` notes. Under the package's PVP-style versioning, the next
+  breaking release after `4.0.0` is represented by a new `4.1.0` section.
+  Date: 2026-07-03
+
 - Decision: Add ordinary `ToJSON` / `FromJSON HttpStatusCode` instances that use
   `renderHttpStatusCode` and `parseHttpStatusCode`, in addition to the map-key instances.
   Rationale: Aeson 2.2.5.0's key classes require these value-level instances for their
@@ -195,6 +205,9 @@ Compare the result against the original purpose.
   parsed operation stores the `4XX` entry under `StatusRange R4XX`. Additional tests cover a
   `Responses` round-trip with a range key, a mixed `default` / explicit / range / `$ref`
   object, parser rejection cases, and a QuickCheck parse/render round-trip property.
+
+- Outcome: The changelog entry was corrected after review to live under a new `4.1.0`
+  section, leaving the already-released `4.0.0` section unchanged.
 
 - Validation: `nix develop -c cabal build openapi-hs` passed after the implementation
   milestones. `nix develop -c cabal test spec` passed at completion with 463 examples and
