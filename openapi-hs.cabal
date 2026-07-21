@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               openapi-hs
-version:            4.1.0
+version:            5.0.0
 synopsis:           OpenAPI 3.1 data model
 category:           Web, OpenApi
 description:
@@ -19,12 +19,17 @@ author:             Nickolay Kudasov, Maxim Koltsov, Nadeem Bitar
 maintainer:         nadeem@gmail.com
 copyright:
   (c) 2015-2016, GetShopTV, (c) 2020, Biocad, (c) 2026, Nadeem Bitar
+  (c) 2015, Oleg Grenrus
 
 build-type:         Simple
-extra-source-files: examples/*.hs
+extra-source-files:
+  examples/*.hs
+  LICENSES/insert-ordered-containers-BSD-3-Clause.txt
+
 extra-doc-files:
   CHANGELOG.md
   MIGRATION_3.0_TO_3.1.md
+  MIGRATION_4_TO_5.md
   README.md
 
 tested-with:        GHC ==9.12.4 || ==9.14.1

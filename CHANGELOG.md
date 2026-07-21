@@ -1,3 +1,19 @@
+5.0.0
+-----
+
+- **Breaking:** removed `Data.OpenApi.Optics` and its overloaded-label accessors. Use the
+  `lens` accessors in `Data.OpenApi.Lens`, which remain re-exported from `Data.OpenApi`.
+- **Breaking:** code that imported `Data.HashSet.InsOrd` to construct OpenAPI tag sets must now
+  import `Data.HashSet.InsOrd.Compat` from `openapi-hs`.
+- **Breaking:** code that used `Data.HashMap.Strict.InsOrd` for OpenAPI map fields must switch to
+  `Data.HashMap.Strict.InsOrd.Compat`.
+- Removed the `optics-core`, `optics-th`, and `insert-ordered-containers` dependencies; the
+  resolved plan also drops `optics-extra` and `indexed-profunctors`. The insertion-ordered map
+  and set implementations are vendored from `insert-ordered-containers-0.3.0` under
+  BSD-3-Clause.
+- Raised the `lens` lower bound to `5.3.6`, the release line tested with the supported GHC
+  9.12/9.14 compiler matrix.
+
 4.1.0
 -----
 

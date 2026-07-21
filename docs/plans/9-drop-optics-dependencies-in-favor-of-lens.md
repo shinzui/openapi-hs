@@ -145,17 +145,22 @@ This section must always reflect the actual current state of the work.
 - [x] (2026-07-21) M3: `cabal build all` and all 487 tests are green; the dependency/import
       scoped search returns no upstream package declaration or set import.
 - [x] (2026-07-21) M3: Committed the independently validated set vendoring milestone.
-- [ ] M4: Prove the build plan is optics-free with the `offenders:` command; add the complete
-      upstream BSD-3-Clause text under `LICENSES/` and include it in the source distribution;
-      bump `version:` to `5.0.0`; write the `5.0.0` CHANGELOG and migration entries; re-run
-      `nix fmt` (or `treefmt`) and the full test suite.
-- [ ] M4: Run `cabal check`, build the Haddocks, create an sdist, inspect its contents, and
-      build/test the unpacked sdist so missing internal modules or third-party notices cannot
+- [x] (2026-07-21) M4: Proved the build plan is optics-free with `offenders: []`; added the complete
+      upstream BSD-3-Clause text under `LICENSES/` and included it in the source distribution;
+      bumped `version:` to `5.0.0`; wrote the `5.0.0` CHANGELOG and migration entries; and
+      re-ran `nix fmt` and the full test suite.
+- [x] (2026-07-21) M4: Ran `cabal check`, built the Haddocks, created and inspected the sdist, and
+      built/tested the unpacked sdist so missing internal modules or third-party notices cannot
       reach Hackage.
-- [ ] M4: Re-run `mori registry dependents shinzui/openapi-hs --packages`; rehearse the known
-      downstream migrations for `servant-openapi-hs`, `relay-pagination`, and `kansoku`, and
-      require green GHC 9.12.4 and 9.14.1 CI before release.
-- [ ] M4: Commit and fill in Outcomes & Retrospective.
+- [x] (2026-07-21) M4: Re-ran `mori registry dependents shinzui/openapi-hs --packages` and
+      completed green detached-worktree migration rehearsals for `servant-openapi-hs`,
+      `relay-pagination`, and `kansoku`.
+- [x] (2026-07-21) M4: Ran all 487 tests locally with both supported compilers, GHC 9.12.4 and
+      GHC 9.14.1.
+- [ ] Release gate: require the GitHub Actions GHC 9.12.4 and 9.14.1 jobs to be green on the final
+      commit before publishing. This cannot be observed until the local commit is pushed.
+- [x] (2026-07-21) M4: Added the durable ADR, filled in Outcomes & Retrospective, and committed
+      the locally complete implementation.
 
 
 ## Surprises & Discoveries
@@ -249,6 +254,42 @@ implementation. Provide concise evidence.
   Evidence: After both Cabal dependency entries and every upstream set import were removed,
   the original command matched only provenance/Haddock comments. The acceptance command now
   targets Cabal list entries and Haskell import declarations, and returns no matches.
+
+- Finding: The source distribution is self-contained and retains every required source and
+  notice file.
+  Evidence: `cabal check`, `cabal haddock all`, and `cabal sdist` succeeded. After extracting
+  `openapi-hs-5.0.0.tar.gz` into a fresh temporary directory, `cabal build all` and
+  `cabal test all --test-show-details=direct` passed all 487 examples. The tarball contains the
+  three vendored modules, both characterization specs, `MIGRATION_4_TO_5.md`, and the exact
+  upstream license. The post-migration example remains 1,616 bytes with SHA-256
+  `908d4c96efe9b693aba1828bd8d4c9009ff2f5a38aa74f66f119f850ed10272f` and is byte-identical
+  to the M0 artifact.
+
+- Finding: All three Mori-reported consumers migrate with only the anticipated import,
+  dependency, and version-bound edits.
+  Evidence: In detached temporary worktrees, `cabal test spec --test-show-details=direct`
+  passed 19 `servant-openapi-hs` examples; `cabal test relay-pagination-servant-test
+  members-server-test --jobs=1 --test-show-details=direct` passed Relay's 23 and 4 examples;
+  `cabal test kansoku-core-test --test-show-details=direct --test-options='--match
+  Kansoku.Api.OpenApi.kansokuOpenApi'` passed 15 Kansoku examples; and `cabal build
+  exe:kansoku-openapi` succeeded. The provider stack used local `openapi-hs-5.0.0` and migrated
+  `servant-openapi-hs-5.0.0` candidates. The worktrees were removed afterward, and the original
+  consumer checkouts were unchanged.
+
+- Finding: Running both Relay suites concurrently can strand the servant test server after its
+  first ten client/server checks even though neither suite has a migration failure. Cabal's
+  serialized `--jobs=1` run completes both suites immediately and repeatably.
+  Evidence: The first combined invocation completed all four `members-server-test` cases but
+  stopped making progress during `decodes mixed ClientPage as 400 sum`. That process was
+  interrupted after the hang; running the servant suite alone passed all 23 tests, then the
+  combined `--jobs=1` command passed both suites.
+
+- Finding: The flake's pinned Nixpkgs exposes GHC 9.14.1 even though the default development
+  shell currently exposes only GHC 9.12.4.
+  Evidence: A temporary Nix shell containing `haskell.compiler.ghc9141` and `cabal-install`
+  reported GHC 9.14.1/Cabal 3.16.1.0. `cabal test all --builddir=dist-newstyle-ghc9141
+  --test-show-details=direct` then built the candidate and passed all 487 examples. GitHub
+  Actions still remains the publication gate for both jobs on the final pushed commit.
 
 
 ## Decision Log
@@ -412,6 +453,15 @@ non-optics upstream instance remains, and `deepseq` is direct. `insert-ordered-c
 absent from both dependency stanzas. The pre-format upstream diff contained only the authorized
 provenance/module/internal-import changes and optics removal, and all 487 tests pass unchanged.
 
+Milestone 4 outcome (2026-07-21): the resolved plan reports `offenders: []`; version 5.0.0,
+release notes, a focused migration guide, exact upstream licensing, and ADR 0001 are in place.
+The lens and insertion-order REPL checks pass, the example is byte-identical to M0, and all 487
+tests pass under both GHC 9.12.4 and GHC 9.14.1. Haddocks, Cabal package checks, and a cleanly
+unpacked source distribution all build successfully. Mori still reports the same three reverse
+dependents, and all three pass their OpenAPI-focused migration rehearsals against the local
+candidate stack. The implementation is locally complete; publication remains deliberately
+blocked until GitHub Actions is green for both compilers on the final pushed commit.
+
 
 ## Context and Orientation
 
@@ -428,6 +478,11 @@ Builds target GHC 9.12.4 and 9.14.1. There is a Nix flake (`flake.nix`, with the
 `nix/haskell.nix`, `nix/treefmt.nix`, `nix/pre-commit.nix`) that provides a dev shell, but every
 command in this plan works with a plain `cabal` and `ghc` on `PATH`; `ghc --version` should
 print `9.12.4`.
+
+**Relevant ADR.** This repository had no `docs/adr/` directory when the plan began. Completion
+created `docs/adr/0001-use-lens-and-own-ordered-containers.md`, which records the durable
+lens-only API, vendored-container ownership and provenance, licensing requirement, compatibility
+policy, and intentionally preserved set-union behavior distilled from this plan.
 
 **Terms used in this plan.**
 
@@ -1426,3 +1481,11 @@ current Mori registry-schema mismatch while retaining its successful reverse-dep
 entries and Haskell import declarations. The original blanket text search necessarily matched
 the required vendoring provenance comments and could not satisfy its own no-output acceptance
 criterion after a correct implementation.
+
+2026-07-21: Completed M4 locally. Added the release metadata, migration guide, exact third-party
+notice, and ADR; verified the optics-free plan, byte-identical example, Haddocks, checked and
+unpacked sdist, all three reverse-dependent migrations, and all 487 tests on both supported
+compilers. Recorded `--jobs=1` as the reliable Relay rehearsal command after its two test suites
+hung when Cabal ran them concurrently. Left the final-commit GitHub Actions matrix explicitly
+unchecked because publishing that commit is outside this implementation run; both CI jobs remain
+mandatory before Hackage publication.

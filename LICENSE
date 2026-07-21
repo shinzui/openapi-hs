@@ -27,3 +27,8 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The modules Data.HashMap.InsOrd.Compat.Internal,
+Data.HashMap.Strict.InsOrd.Compat.Impl, and Data.HashSet.InsOrd.Compat contain
+code derived from insert-ordered-containers-0.3.0. The complete upstream
+BSD-3-Clause notice is in LICENSES/insert-ordered-containers-BSD-3-Clause.txt.
