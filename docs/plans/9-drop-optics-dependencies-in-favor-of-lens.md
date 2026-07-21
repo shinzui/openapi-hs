@@ -119,12 +119,13 @@ This section must always reflect the actual current state of the work.
 - [x] (2026-07-21) M1: Deleted `src/Data/OpenApi/Optics.hs`, removed its re-export and import from
       `src/Data/OpenApi.hs`, stripped the optics instance block out of
       `src/Data/HashMap/Strict/InsOrd/Compat.hs`, removed `optics-core` / `optics-th` /
-      `OverloadedLabels` from `openapi-hs.cabal`, and raised the honest `lens` lower bound to
-      `5.3.6`, the current release tested with both supported compilers.
+      `OverloadedLabels` from `openapi-hs.cabal`, and raised the stale `lens` lower bound. The
+      initial `5.3.6` bound was corrected after M4 to the verified minimum, `5.3.3`.
 - [x] (2026-07-21) M1: Updated `README.md` (now section "Lenses") and the `$lens` Haddock note in
       `src/Data/OpenApi.hs` so they no longer advertise an optics interface.
-- [x] (2026-07-21) M1: `cabal build all`, the `lens ==5.3.6` dry-run, and all 487 tests are green;
-      the scoped `rg` for optics references returns no matches.
+- [x] (2026-07-21) M1: `cabal build all`, the initial `lens ==5.3.6` dry-run, and all 487 tests
+      are green; the scoped `rg` for optics references returns no matches. The lower-bound
+      audit after M4 supersedes that initial constraint check with `lens ==5.3.3`.
 - [x] (2026-07-21) M1: Committed the independently validated optics-surface removal.
 - [x] (2026-07-21) M2: Added `Data/HashMap/InsOrd/Compat/Internal.hs` (the vendored `SortedAp` helper) and
       `Data/HashMap/Strict/InsOrd/Compat/Impl.hs` (the vendored `InsOrdHashMap`
@@ -157,6 +158,10 @@ This section must always reflect the actual current state of the work.
       `relay-pagination`, and `kansoku`.
 - [x] (2026-07-21) M4: Ran all 487 tests locally with both supported compilers, GHC 9.12.4 and
       GHC 9.14.1.
+- [x] (2026-07-21) Post-M4: Audited released lens sources and package metadata, corrected the
+      lower bound to `lens >=5.3.3 && <5.4`, and ran all 487 tests on GHC 9.12.4 with exactly
+      `lens-5.3.3`. Confirmed that GHC 9.14.1 resolves `lens-5.3.6`, whose relaxed
+      `template-haskell` bound is required by that compiler.
 - [ ] Release gate: require the GitHub Actions GHC 9.12.4 and 9.14.1 jobs to be green on the final
       commit before publishing. This cannot be observed until the local commit is pushed.
 - [x] (2026-07-21) M4: Added the durable ADR, filled in Outcomes & Retrospective, and committed
@@ -199,15 +204,17 @@ implementation. Provide concise evidence.
   `indexed-traversable` package, while `openapi-hs.cabal` lists only `lens`. Cabal package
   hiding does not make a transitive dependency importable. Importing the classes through
   `Control.Lens` in both the wrapper and hidden implementation uses the public API of the now
-  required `lens-5.3.6` without adding or guessing a transitive dependency.
+  required `lens >=5.3.3` range without adding or guessing a transitive dependency.
 
-- Finding: The declared `lens >=4.16.1` lower bound is not a usable compatibility claim for the
-  current compiler matrix. On GHC 9.12.4, a dry-run with `lens ==4.16.1` fails because that lens
-  line requires `vector <0.13`, whose released versions require `base <4.20`; a dry-run with
-  `lens ==5.2.3` fails because it requires `template-haskell <2.22`. The authoritative Hackage
-  metadata for current `lens-5.3.6` explicitly includes GHC 9.12.2 and GHC 9.14.1 and permits
-  `template-haskell <2.25`. An explicit local dry-run with `lens ==5.3.6` resolves on GHC
-  9.12.4. The revised v5 bound is `lens >=5.3.6 && <5.4`.
+- Finding: The declared `lens >=4.16.1` lower bound is not usable with the supported compilers,
+  but `5.3.6` is stricter than necessary as a package-wide lower bound. The lens APIs used here
+  are already present and re-exported by `lens-5.2.3`; compiler compatibility, not API
+  availability, sets the bound. On GHC 9.12.4, `lens-5.2.3` requires
+  `template-haskell <2.22`, and `lens-5.3` through `5.3.2` require
+  `template-haskell <2.23`; `lens-5.3.3` widens that bound to `<2.24` and passes all 487 tests.
+  On GHC 9.14.1, releases through `5.3.5` reject `template-haskell-2.24`, while `lens-5.3.6`
+  widens the bound to `<2.25` and resolves. The truthful package bound is therefore
+  `lens >=5.3.3 && <5.4`; the solver necessarily chooses at least `5.3.6` on GHC 9.14.
 
 - Finding: The current CPP branch makes the map type selected by `openapi-hs-4.1.0` depend on
   the solver's `insert-ordered-containers` version. Known reverse dependents
@@ -351,6 +358,16 @@ Record every decision made while working on the plan.
   releases cannot resolve with their installed `base`/`template-haskell` versions, while
   Hackage `lens-5.3.6` is the current release and explicitly tests GHC 9.14.1. A truthful lower
   bound is safer than an untested compatibility claim, especially for a major release.
+  Status: Superseded later on 2026-07-21 by the dependency-bound audit below.
+  Date: 2026-07-21
+
+- Decision: Set the `lens` lower bound to `5.3.3`, retaining the `<5.4` upper bound.
+  Rationale: Exact-version source and solver checks show that every lens API used by this
+  package predates 5.3.3. Released `lens-5.3.3` is the first version whose
+  `template-haskell <2.24` bound permits GHC 9.12.4, and all 487 tests pass with that exact
+  version. GHC 9.14.1 has `template-haskell-2.24`, so its solver still selects `lens-5.3.6`,
+  the first release permitting `<2.25`. This expresses the minimum supported version without
+  weakening either compiler's effective dependency selection.
   Date: 2026-07-21
 
 - Decision: Strip unused instances only from the hidden vendored map implementation. Keep all
@@ -437,8 +454,9 @@ examples and exposed the released set union/`valid` caveat without changing prod
 Milestone 1 outcome (2026-07-21): the public optics module, direct optics dependencies,
 overloaded-label extension, wrapper optics instances, and optics documentation are gone. The
 surviving indexed instances now use the classes re-exported by `Control.Lens`; the package
-resolves at the new `lens ==5.3.6` lower bound and all 487 tests pass. Optics remains only as an
-indirect dependency of `insert-ordered-containers`, which Milestones 2 and 3 remove.
+initially resolved at `lens ==5.3.6` and all 487 tests passed. The post-M4 bound audit later
+proved the same suite with `lens ==5.3.3`. Optics remains only as an indirect dependency of
+`insert-ordered-containers`, which Milestones 2 and 3 remove.
 
 Milestone 2 outcome (2026-07-21): the compat map wrapper now delegates exclusively to two
 hidden, hash-verified modules vendored from `insert-ordered-containers-0.3.0`. The CPP-dependent
@@ -461,6 +479,12 @@ unpacked source distribution all build successfully. Mori still reports the same
 dependents, and all three pass their OpenAPI-focused migration rehearsals against the local
 candidate stack. The implementation is locally complete; publication remains deliberately
 blocked until GitHub Actions is green for both compilers on the final pushed commit.
+
+Post-M4 dependency-bound outcome (2026-07-21): released-source inspection found no API reason
+to require lens 5.3.6. Exact solver checks identify 5.3.3 as the first release compatible with
+GHC 9.12.4 and 5.3.6 as the first compatible with GHC 9.14.1. The Cabal lower bound and release
+documentation now say `lens >=5.3.3 && <5.4`; all 487 tests pass at the exact lower bound on
+GHC 9.12.4, while the GHC 9.14.1 plan selects 5.3.6.
 
 
 ## Context and Orientation
@@ -560,7 +584,8 @@ whose own library `build-depends` include `optics-core >=0.4.1.1 && <0.5` and
 `Optics.FunctorWithIndex`, `Optics.FoldableWithIndex` and `Optics.TraversableWithIndex`
 instances. Those capabilities are not optics-specific and must be kept. Change their qualifier
 to `Lens.` so they follow the classes exported by `Control.Lens`.
-The newly required `lens-5.3.6` re-exports these classes from `indexed-traversable`. Sourcing
+Every release in the required `lens >=5.3.3 && <5.4` range re-exports these classes from
+`indexed-traversable`. Sourcing
 them through `Control.Lens` keeps that transitive package out of this package's direct imports.
 Only the block labelled `-- Optics`
 (the `Optics.Index`/`Optics.IxValue` type instances and the `Optics.Ixed`/`Optics.At`
@@ -792,8 +817,9 @@ In `openapi-hs.cabal`, delete the line `Data.OpenApi.Optics` from the library's
 `exposed-modules` (currently line 49); delete the two `build-depends` entries
 `optics-core >=0.2 && <0.5` and `optics-th >=0.2 && <0.5` (currently lines 81–82); and delete
 `OverloadedLabels` from `default-extensions` (currently line 93). Change the `lens` dependency
-from `>=4.16.1 && <5.4` to `>=5.3.6 && <5.4`. Hackage `5.3.6` is the current release and the
-first declared lower bound in this package that is explicitly tested with GHC 9.14.1.
+from `>=4.16.1 && <5.4` to `>=5.3.3 && <5.4`. Released `lens-5.3.3` is the first version that
+resolves on the supported GHC 9.12 line. The supported GHC 9.14 line resolves `lens-5.3.6`
+because earlier releases reject its `template-haskell` version.
 
 In `src/Data/OpenApi.hs`, delete `module Data.OpenApi.Optics,` from the export list (line 37)
 and `import Data.OpenApi.Optics ()` from the import list (line 137). Then rewrite the Haddock
@@ -835,7 +861,7 @@ reports zero failures, and
 `rg -n "optics" src test examples openapi-hs.cabal -g '*.hs' -g '*.cabal'`
 returns nothing (the historical CHANGELOG entry at `CHANGELOG.md:124` and the `docs/plans/`
 files legitimately still mention optics and are out of scope). Also run
-`cabal build all --dry-run --constraint='lens ==5.3.6'`; it must resolve, proving the new lower
+`cabal build all --dry-run --constraint='lens ==5.3.3'`; it must resolve, proving the new lower
 bound rather than only an unconstrained latest build.
 
 ### Milestone 2 — Vendor the insertion-ordered hash map
@@ -993,7 +1019,8 @@ from `Data.OpenApi`); that `openapi-hs` no longer depends on `optics-core`, `opt
 `Data.HashMap.Strict.InsOrd` for OpenAPI map fields must switch to
 `Data.HashMap.Strict.InsOrd.Compat`. Mention that the insertion-ordered map and set
 implementations are vendored from `insert-ordered-containers 0.3.0` under BSD-3-Clause and that
-the `lens` lower bound is now `5.3.6` to match the supported compiler matrix.
+the `lens` lower bound is now `5.3.3`; explain that GHC 9.14 selects `5.3.6` because of the
+upstream `template-haskell` bounds.
 
 Create `MIGRATION_4_TO_5.md` and list it under `extra-doc-files`. Give downstream users exact
 before/after imports and expressions. Cover removal of `Data.OpenApi.Optics`, replacement of
@@ -1006,8 +1033,8 @@ used `Data.HashMap.Strict.InsOrd` to construct any OpenAPI map field must import
 `insert-ordered-containers` only if their own code has no remaining independent use for them.
 State that the set keeps its non-optics instances, including `NFData`/`NFData1`, and that the
 compat map intentionally keeps order-insensitive equality and JSON-object encoding.
-Also state the new `lens >=5.3.6 && <5.4` bound and explain that it is the release line tested
-with GHC 9.12/9.14.
+Also state the new `lens >=5.3.3 && <5.4` bound and explain the effective tested selections:
+5.3.3 on GHC 9.12 and 5.3.6 on GHC 9.14.
 
 Also refresh `README.md` if the M1 edits left anything stale, and check the "Lenses" section
 reads correctly end to end.
@@ -1095,7 +1122,7 @@ trailers.
 # as described above
 cabal build all
 cabal test all --test-show-details=direct
-cabal build all --dry-run --constraint='lens ==5.3.6'
+cabal build all --dry-run --constraint='lens ==5.3.3'
 rg -n "optics" src test examples openapi-hs.cabal -g '*.hs' -g '*.cabal'
 ```
 
@@ -1109,7 +1136,8 @@ refactor!: remove the optics accessor surface
 Delete Data.OpenApi.Optics and its re-export from Data.OpenApi, strip the
 optics Ixed/At instances from the InsOrdHashMap compat wrapper, and drop
 optics-core, optics-th and the OverloadedLabels default extension. Raise the
-lens lower bound to 5.3.6, the release tested with the supported GHC matrix.
+lens lower bound to 5.3.3, the first release compatible with supported GHC 9.12;
+supported GHC 9.14 selects 5.3.6 through upstream bounds.
 
 The FunctorWithIndex/FoldableWithIndex/TraversableWithIndex instances in the
 compat wrapper are kept through the classes exported by Control.Lens.
@@ -1378,8 +1406,9 @@ rebuildable Cabal artifacts, which must then be regenerated before continuing.
 `indexed-profunctors` from the build plan.
 
 **Dependency bound tightened.** `lens >=4.16.1 && <5.4` becomes
-`lens >=5.3.6 && <5.4`. Hackage `lens-5.3.6` is the current release and explicitly supports
-the GHC 9.12/9.14 compiler line declared by this package.
+`lens >=5.3.3 && <5.4`. Released `lens-5.3.3` is the first version compatible with the
+supported GHC 9.12 line. On GHC 9.14, upstream `template-haskell` bounds make `lens-5.3.6` the
+first version in the range that resolves.
 
 **Dependencies added.** `deepseq >=1.4.4 && <1.6` becomes a direct library dependency because
 the public vendored set retains the upstream `NFData` and `NFData1` instances. The test suite
@@ -1465,7 +1494,8 @@ listed in the Cabal source-distribution metadata.
 2026-07-21: Validated the plan specifically for regression risk. Added pre/post
 characterization tests for ordered maps and sets, retained every non-optics public set instance,
 corrected the upstream `v0.3.0` commit and pinned released-source hashes, routed indexed classes
-through `Control.Lens`, raised the stale lens lower bound to the GHC-9.14-tested `5.3.6`, made
+through `Control.Lens`, initially raised the stale lens lower bound to the
+GHC-9.14-tested `5.3.6`, made
 the complete upstream license part of the checked sdist, documented both container source
 migrations, and made unpacked-sdist, known reverse-dependent, and two-compiler CI checks release
 gates. These changes address silent behavioral drift, avoidable API loss, packaging omissions,
@@ -1489,3 +1519,10 @@ compilers. Recorded `--jobs=1` as the reliable Relay rehearsal command after its
 hung when Cabal ran them concurrently. Left the final-commit GitHub Actions matrix explicitly
 unchecked because publishing that commit is outside this implementation run; both CI jobs remain
 mandatory before Hackage publication.
+
+2026-07-21: Revisited the lens bound after implementation. Exact released-source and solver
+checks showed the package uses no API introduced in 5.3.6: `lens-5.3.3` is the first release
+compatible with GHC 9.12.4, while `lens-5.3.6` is the first compatible with GHC 9.14.1 because
+of upstream `template-haskell` bounds. Corrected the package lower bound and all release/ADR
+documentation to `lens >=5.3.3 && <5.4`; verified all 487 tests with exact 5.3.3 on GHC 9.12.4
+and retained the 5.3.6 selection on GHC 9.14.1.

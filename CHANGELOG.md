@@ -11,8 +11,9 @@
   resolved plan also drops `optics-extra` and `indexed-profunctors`. The insertion-ordered map
   and set implementations are vendored from `insert-ordered-containers-0.3.0` under
   BSD-3-Clause.
-- Raised the `lens` lower bound to `5.3.6`, the release line tested with the supported GHC
-  9.12/9.14 compiler matrix.
+- Raised the `lens` lower bound to `5.3.3`, the earliest release verified with the supported
+  GHC 9.12 line. GHC 9.14 resolves to `lens-5.3.6` because earlier releases do not permit its
+  `template-haskell` version.
 
 4.1.0
 -----

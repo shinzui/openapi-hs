@@ -80,5 +80,6 @@ application still imports it independently.
 
 ## Compiler and lens bounds
 
-Version 5 requires `lens >=5.3.6 && <5.4`. That release line is tested with this package's
-supported GHC 9.12 and GHC 9.14 compiler matrix.
+Version 5 requires `lens >=5.3.3 && <5.4`. The lower bound is verified with GHC 9.12. On GHC
+9.14, the solver selects `lens-5.3.6`, the first release in this range that permits GHC 9.14's
+`template-haskell` version.

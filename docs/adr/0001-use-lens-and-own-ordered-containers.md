@@ -19,7 +19,9 @@ therefore change behavior rather than merely remove dependencies.
 
 `Data.OpenApi.Lens` is the only accessor API. `Data.OpenApi.Optics` is removed, and surviving
 indexed container instances use the classes exported by `Control.Lens`. The supported lens
-line is `lens >=5.3.6 && <5.4`, matching the package's GHC 9.12.4 and 9.14.1 compiler matrix.
+line is `lens >=5.3.3 && <5.4`. The lower bound is verified with GHC 9.12.4; on GHC 9.14.1,
+upstream `template-haskell` bounds make `lens-5.3.6` the first release in that range that
+resolves.
 
 The three required ordered-container modules are maintained in this repository, derived from
 the released `insert-ordered-containers-0.3.0` source:
