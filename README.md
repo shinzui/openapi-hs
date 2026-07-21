@@ -32,7 +32,7 @@ describes HTTP APIs in JSON or YAML. OpenAPI 3.1 adopts the
   `PathItem`.
 - **Schema validation** that understands the new 3.1 keywords.
 - **`ToSchema` derivation** to generate schemas from your Haskell types via `GHC.Generics`.
-- **`lens` and `optics`** accessors for ergonomic reads and updates.
+- **`lens` accessors** for ergonomic reads and updates.
 - **3.0 → 3.1 migration helpers** for documents you don't control yet.
 
 ## Installation
@@ -117,21 +117,18 @@ ok = validateToJSON (User "Ada" 36)   -- []
 For validating an arbitrary JSON `Value` against a specific `Schema`, use
 `validateJSON :: Definitions Schema -> Schema -> Value -> [ValidationError]`.
 
-## Lenses and optics
+## Lenses
 
-Every record field has a generated accessor in both the
-[`lens`](https://hackage.haskell.org/package/lens) and
-[`optics`](https://hackage.haskell.org/package/optics) styles. Import whichever you prefer:
+Every record field has a generated accessor from
+[`lens`](https://hackage.haskell.org/package/lens), re-exported by the umbrella module:
 
 ```haskell
-import Data.OpenApi             -- lens accessors (Data.OpenApi.Lens)
--- or
-import Data.OpenApi.Optics      -- optics labels (#type, #properties, …)
+import Data.OpenApi -- lens accessors (Data.OpenApi.Lens)
 ```
 
 A few field lenses are suffixed with `_` to avoid clashing with reserved words or `Prelude`
 names: `type_`, `enum_`, `minimum_`, `maximum_`, `default_`, `const_`, `if_`, `then_`, `else_`,
-`contains_`, `id_`. The corresponding optics labels keep the bare name (`#type`, `#const`, …).
+`contains_`, `id_`.
 
 ## Migrating from OpenAPI 3.0
 

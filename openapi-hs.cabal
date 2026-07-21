@@ -46,7 +46,6 @@ library
     Data.OpenApi.Lens
     Data.OpenApi.Migration
     Data.OpenApi.Operation
-    Data.OpenApi.Optics
     Data.OpenApi.ParamSchema
     Data.OpenApi.Schema
     Data.OpenApi.Schema.Generator
@@ -77,9 +76,7 @@ library
     , hashable                   >=1.2.7.0  && <1.6
     , http-media                 >=0.8.0.0  && <0.9
     , insert-ordered-containers  >=0.2.3    && <0.4
-    , lens                       >=4.16.1   && <5.4
-    , optics-core                >=0.2      && <0.5
-    , optics-th                  >=0.2      && <0.5
+    , lens                       >=5.3.6    && <5.4
     , QuickCheck                 >=2.10.1   && <2.19
     , scientific                 >=0.3.6.2  && <0.4
     , unordered-containers       >=0.2.9.0  && <0.3
@@ -90,7 +87,6 @@ library
   default-extensions:
     DefaultSignatures
     FunctionalDependencies
-    OverloadedLabels
     OverloadedStrings
     PackageImports
     RecordWildCards

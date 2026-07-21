@@ -169,8 +169,6 @@ import qualified Control.Lens        as Lens
 import Control.Lens
        (At (..), Index, Iso, IxValue, Ixed (..), Traversal, _1, _2, iso, (<&>))
 
-import qualified Optics.Core         as Optics
-
 newtype InsOrdHashMap k v = InsOrdHashMap { unCompatInsOrdHashMap :: InsOrdHashMap.InsOrdHashMap k v }
   deriving stock (Show, Read, Data, Functor, Foldable, Traversable)
   deriving newtype (Semigroup, Monoid)
@@ -212,12 +210,12 @@ instance (Eq k, Hashable k, A.FromJSONKey k, A.FromJSON v) => A.FromJSON (InsOrd
 -- indexed-traversals
 -------------------------------------------------------------------------------
 
-instance (Eq k, Hashable k) => Optics.FunctorWithIndex k (InsOrdHashMap k) where
+instance (Eq k, Hashable k) => Lens.FunctorWithIndex k (InsOrdHashMap k) where
     imap = mapWithKey
-instance (Eq k, Hashable k) => Optics.FoldableWithIndex k (InsOrdHashMap k) where
+instance (Eq k, Hashable k) => Lens.FoldableWithIndex k (InsOrdHashMap k) where
     ifoldMap = foldMapWithKey
     ifoldr   = foldrWithKey
-instance (Eq k, Hashable k) => Optics.TraversableWithIndex k (InsOrdHashMap k) where
+instance (Eq k, Hashable k) => Lens.TraversableWithIndex k (InsOrdHashMap k) where
     itraverse = traverseWithKey
 
 -------------------------------------------------------------------------------
@@ -249,23 +247,6 @@ instance (Eq k, Hashable k) => At (InsOrdHashMap k a) where
         Just v' -> insert k v' m
       where mv = lookup k m
     {-# INLINABLE at #-}
-
--------------------------------------------------------------------------------
--- Optics
--------------------------------------------------------------------------------
-
-type instance Optics.Index (InsOrdHashMap k v) = k
-type instance Optics.IxValue (InsOrdHashMap k v) = v
-
-instance (Eq k, Hashable k) => Optics.Ixed (InsOrdHashMap k v) where
-    ix k = Optics.atraversalVL $ \point f m -> ixImpl k point f m
-    {-# INLINE ix #-}
-
-instance (Eq k, Hashable k) => Optics.At (InsOrdHashMap k a) where
-    at k = Optics.lensVL $ \f m -> Lens.at k f m
-    {-# INLINE at #-}
-
--------------------------------------------------------------------------------
 
 -- | This is a slight lie, as roundtrip doesn't preserve ordering.
 hashMap :: Iso (InsOrdHashMap k a) (InsOrdHashMap k b) (HashMap k a) (HashMap k b)

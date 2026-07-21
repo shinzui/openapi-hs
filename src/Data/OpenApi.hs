@@ -34,7 +34,6 @@ module Data.OpenApi
 
     -- * Re-exports
     module Data.OpenApi.Lens,
-    module Data.OpenApi.Optics,
     module Data.OpenApi.Operation,
     module Data.OpenApi.ParamSchema,
     module Data.OpenApi.Schema,
@@ -134,7 +133,6 @@ where
 import Data.OpenApi.Internal
 import Data.OpenApi.Lens
 import Data.OpenApi.Operation
-import Data.OpenApi.Optics ()
 import Data.OpenApi.ParamSchema
 import Data.OpenApi.Schema
 import Data.OpenApi.Schema.Validation
@@ -215,7 +213,7 @@ import Data.OpenApi.Schema.Validation
 
 -- $lens
 --
--- Note: if you're working with the <https://hackage.haskell.org/package/optics optics> library, take a look at "Data.OpenApi.Optics".
+-- Note: all accessors live in "Data.OpenApi.Lens" and are re-exported here.
 --
 -- Since @'OpenApi'@ has a fairly complex structure, lenses and prisms are used
 -- to work comfortably with it. In combination with @'Monoid'@ instances, lenses

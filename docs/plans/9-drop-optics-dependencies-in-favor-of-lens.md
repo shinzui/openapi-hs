@@ -116,15 +116,16 @@ This section must always reflect the actual current state of the work.
       JSON, duplicate-key behavior, folds/traversals, lens operations, `valid`, and upstream
       overflow regression coverage. The expanded suite passes with 487 examples; the set tests
       preserve the released union/`valid` caveat described below.
-- [ ] M1: Delete `src/Data/OpenApi/Optics.hs`, remove its re-export and import from
-      `src/Data/OpenApi.hs`, strip the optics instance block out of
-      `src/Data/HashMap/Strict/InsOrd/Compat.hs`, remove `optics-core` / `optics-th` /
-      `OverloadedLabels` from `openapi-hs.cabal`, and raise the honest `lens` lower bound to
+- [x] (2026-07-21) M1: Deleted `src/Data/OpenApi/Optics.hs`, removed its re-export and import from
+      `src/Data/OpenApi.hs`, stripped the optics instance block out of
+      `src/Data/HashMap/Strict/InsOrd/Compat.hs`, removed `optics-core` / `optics-th` /
+      `OverloadedLabels` from `openapi-hs.cabal`, and raised the honest `lens` lower bound to
       `5.3.6`, the current release tested with both supported compilers.
-- [ ] M1: Update `README.md` (section "Lenses and optics") and the `$lens` Haddock note in
+- [x] (2026-07-21) M1: Updated `README.md` (now section "Lenses") and the `$lens` Haddock note in
       `src/Data/OpenApi.hs` so they no longer advertise an optics interface.
-- [ ] M1: `cabal build all` and `cabal test all` green.
-- [ ] M1: Commit.
+- [x] (2026-07-21) M1: `cabal build all`, the `lens ==5.3.6` dry-run, and all 487 tests are green;
+      the scoped `rg` for optics references returns no matches.
+- [x] (2026-07-21) M1: Committed the independently validated optics-surface removal.
 - [ ] M2: Add `Data/HashMap/InsOrd/Compat/Internal.hs` (the vendored `SortedAp` helper) and
       `Data/HashMap/Strict/InsOrd/Compat/Impl.hs` (the vendored `InsOrdHashMap`
       implementation, optics stripped) under `src/`, and register both in `openapi-hs.cabal`.
@@ -231,6 +232,12 @@ implementation. Provide concise evidence.
   `deprecation_alternative`. The vendored dependency source was therefore obtained from the
   authoritative Hackage `0.3.0` release as already prescribed, and all four pinned hashes
   matched.
+
+- Finding: An interrupted/overlapping Cabal rebuild can leave missing `.o.tmp` rename errors in
+  `dist-newstyle`, even though the source compiles. The recovery documented in this plan works.
+  Evidence: The first M1 test rebuild reported missing temporary objects in four test modules;
+  after confirming no repository Cabal process remained, `cabal clean` followed by a single
+  `cabal test all --test-show-details=direct` completed with `487 examples, 0 failures`.
 
 
 ## Decision Log
@@ -374,6 +381,12 @@ passed, the example baseline is 1,616 bytes with SHA-256
 `908d4c96efe9b693aba1828bd8d4c9009ff2f5a38aa74f66f119f850ed10272f`, and the offender list
 matched the plan. The permanent map/set characterization suites raise the total to 487 passing
 examples and exposed the released set union/`valid` caveat without changing production code.
+
+Milestone 1 outcome (2026-07-21): the public optics module, direct optics dependencies,
+overloaded-label extension, wrapper optics instances, and optics documentation are gone. The
+surviving indexed instances now use the classes re-exported by `Control.Lens`; the package
+resolves at the new `lens ==5.3.6` lower bound and all 487 tests pass. Optics remains only as an
+indirect dependency of `insert-ordered-containers`, which Milestones 2 and 3 remove.
 
 
 ## Context and Orientation
