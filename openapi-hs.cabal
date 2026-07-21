@@ -52,7 +52,10 @@ library
     Data.OpenApi.Schema.Validation
     Data.OpenApi.SchemaOptions
 
-  -- internal modules
+  other-modules:
+    Data.HashMap.InsOrd.Compat.Internal
+    Data.HashMap.Strict.InsOrd.Compat.Impl
+
   -- GHC boot libraries
   build-depends:
     , base              >=4.11.1.0 && <4.23

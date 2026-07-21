@@ -126,13 +126,15 @@ This section must always reflect the actual current state of the work.
 - [x] (2026-07-21) M1: `cabal build all`, the `lens ==5.3.6` dry-run, and all 487 tests are green;
       the scoped `rg` for optics references returns no matches.
 - [x] (2026-07-21) M1: Committed the independently validated optics-surface removal.
-- [ ] M2: Add `Data/HashMap/InsOrd/Compat/Internal.hs` (the vendored `SortedAp` helper) and
+- [x] (2026-07-21) M2: Added `Data/HashMap/InsOrd/Compat/Internal.hs` (the vendored `SortedAp` helper) and
       `Data/HashMap/Strict/InsOrd/Compat/Impl.hs` (the vendored `InsOrdHashMap`
-      implementation, optics stripped) under `src/`, and register both in `openapi-hs.cabal`.
-- [ ] M2: Repoint `src/Data/HashMap/Strict/InsOrd/Compat.hs` at the vendored implementation
-      and delete its `MIN_VERSION_insert_ordered_containers` CPP branch.
-- [ ] M2: `cabal build all` and `cabal test all` green.
-- [ ] M2: Commit.
+      implementation, optics stripped) under `src/`, and registered both in `openapi-hs.cabal`.
+      Both hash-verified sources were reviewed against Hackage before formatting.
+- [x] (2026-07-21) M2: Repointed `src/Data/HashMap/Strict/InsOrd/Compat.hs` at the vendored
+      implementation and deleted its `MIN_VERSION_insert_ordered_containers` CPP branch.
+- [x] (2026-07-21) M2: `cabal build all` and all 487 tests are green; the scoped search for a
+      direct upstream ordered-map import returns no matches.
+- [x] (2026-07-21) M2: Committed the independently validated map vendoring milestone.
 - [ ] M3: Add `src/Data/HashSet/InsOrd/Compat.hs` (the vendored `InsOrdHashSet`, optics
       stripped but all non-optics instances retained), register it in `openapi-hs.cabal`, and
       repoint the five modules that import `Data.HashSet.InsOrd` after M0.
@@ -387,6 +389,13 @@ overloaded-label extension, wrapper optics instances, and optics documentation a
 surviving indexed instances now use the classes re-exported by `Control.Lens`; the package
 resolves at the new `lens ==5.3.6` lower bound and all 487 tests pass. Optics remains only as an
 indirect dependency of `insert-ordered-containers`, which Milestones 2 and 3 remove.
+
+Milestone 2 outcome (2026-07-21): the compat map wrapper now delegates exclusively to two
+hidden, hash-verified modules vendored from `insert-ordered-containers-0.3.0`. The CPP-dependent
+public type switch is gone; the wrapper still owns order-insensitive equality and object-shaped
+JSON. The complete pre-format upstream diff contained only the authorized provenance/module
+renames, indexed-class import move, and removal of optics, Aeson, deepseq, Apply, and Bind code.
+All 487 tests pass unchanged.
 
 
 ## Context and Orientation

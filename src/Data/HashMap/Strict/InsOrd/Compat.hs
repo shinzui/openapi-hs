@@ -1,7 +1,6 @@
 -- Ported from GetShopTV/swagger2 (pull request #262) to apply the same
 -- insert-ordered-containers-0.3 compatibility fix to openapi3.
 -- Credit for the design and implementation belongs to the swagger2 authors.
-{-# LANGUAGE CPP #-}
 
 -- |
 -- Module:      Data.HashMap.Strict.InsOrd.Compat
@@ -145,108 +144,114 @@ module Data.HashMap.Strict.InsOrd.Compat
   )
 where
 
-#if !MIN_VERSION_insert_ordered_containers(0,3,0)
-import Prelude hiding (null, lookup, map, foldl', foldr, filter)
-import Data.HashMap.Strict.InsOrd
-#else
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
-
-import Prelude hiding (null, size, member, lookup, lookupDefault, map, foldl', filter)
-import qualified Prelude
-
-import qualified Data.Aeson as A
-import qualified Data.Aeson.Encoding as E
-import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
-
-import qualified GHC.Exts as Exts
-
-import Data.Data                       (Data)
-import Data.Foldable                   (Foldable (foldMap))
-import Data.Hashable                   (Hashable (..))
-
-import qualified Control.Lens        as Lens
 import Control.Lens
-       (At (..), Index, Iso, IxValue, Ixed (..), Traversal, _1, _2, iso, (<&>))
+  ( At (..),
+    Index,
+    Iso,
+    IxValue,
+    Ixed (..),
+    Traversal,
+    iso,
+    (<&>),
+    _1,
+    _2,
+  )
+import Control.Lens qualified as Lens
+import Data.Aeson qualified as A
+import Data.Aeson.Encoding qualified as E
+import Data.Data (Data)
+import Data.Foldable (Foldable (foldMap))
+import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
+import Data.HashMap.Strict.InsOrd.Compat.Impl qualified as InsOrdHashMap
+import Data.Hashable (Hashable (..))
+import GHC.Exts qualified as Exts
+import Prelude hiding (filter, foldl', lookup, lookupDefault, map, member, null, size)
+import Prelude qualified
 
-newtype InsOrdHashMap k v = InsOrdHashMap { unCompatInsOrdHashMap :: InsOrdHashMap.InsOrdHashMap k v }
+newtype InsOrdHashMap k v = InsOrdHashMap {unCompatInsOrdHashMap :: InsOrdHashMap.InsOrdHashMap k v}
   deriving stock (Show, Read, Data, Functor, Foldable, Traversable)
   deriving newtype (Semigroup, Monoid)
 
 instance (Eq k, Eq v) => Eq (InsOrdHashMap k v) where
-    a == b = toHashMap a == toHashMap b
+  a == b = toHashMap a == toHashMap b
 
 instance (Eq k, Hashable k) => Exts.IsList (InsOrdHashMap k v) where
-    type Item (InsOrdHashMap k v) = Exts.Item (InsOrdHashMap.InsOrdHashMap k v)
-    fromList = InsOrdHashMap . InsOrdHashMap.fromList
-    toList   = InsOrdHashMap.toList . unCompatInsOrdHashMap
+  type Item (InsOrdHashMap k v) = Exts.Item (InsOrdHashMap.InsOrdHashMap k v)
+  fromList = InsOrdHashMap . InsOrdHashMap.fromList
+  toList = InsOrdHashMap.toList . unCompatInsOrdHashMap
 
 -------------------------------------------------------------------------------
 -- Aeson
 -------------------------------------------------------------------------------
 
 instance (A.ToJSONKey k) => A.ToJSON1 (InsOrdHashMap k) where
-    liftToJSON _ t _ = case A.toJSONKey :: A.ToJSONKeyFunction k of
-      A.ToJSONKeyText f _ -> A.object . fmap (\(k, v) -> (f k, t v)) . toList
-      A.ToJSONKeyValue f _ -> A.toJSON . fmap (\(k,v) -> A.toJSON (f k, t v)) . toList
+  liftToJSON _ t _ = case A.toJSONKey :: A.ToJSONKeyFunction k of
+    A.ToJSONKeyText f _ -> A.object . fmap (\(k, v) -> (f k, t v)) . toList
+    A.ToJSONKeyValue f _ -> A.toJSON . fmap (\(k, v) -> A.toJSON (f k, t v)) . toList
 
-    liftToEncoding o t _ = case A.toJSONKey :: A.ToJSONKeyFunction k of
-      A.ToJSONKeyText _ f ->  E.dict f t foldrWithKey
-      A.ToJSONKeyValue _ f -> E.list (A.liftToEncoding2 (const False) f (E.list f) o t (E.list t)) . toList
+  liftToEncoding o t _ = case A.toJSONKey :: A.ToJSONKeyFunction k of
+    A.ToJSONKeyText _ f -> E.dict f t foldrWithKey
+    A.ToJSONKeyValue _ f -> E.list (A.liftToEncoding2 (const False) f (E.list f) o t (E.list t)) . toList
 
 instance (A.ToJSONKey k, A.ToJSON v) => A.ToJSON (InsOrdHashMap k v) where
-    toJSON = A.toJSON1
-    toEncoding = A.toEncoding1
+  toJSON = A.toJSON1
+  toEncoding = A.toEncoding1
 
 -------------------------------------------------------------------------------
 
 instance (Eq k, Hashable k, A.FromJSONKey k) => A.FromJSON1 (InsOrdHashMap k) where
-    liftParseJSON o p pl v = fromList . HashMap.toList <$> A.liftParseJSON o p pl v
+  liftParseJSON o p pl v = fromList . HashMap.toList <$> A.liftParseJSON o p pl v
 
 instance (Eq k, Hashable k, A.FromJSONKey k, A.FromJSON v) => A.FromJSON (InsOrdHashMap k v) where
-    parseJSON = A.parseJSON1
+  parseJSON = A.parseJSON1
 
 -------------------------------------------------------------------------------
 -- indexed-traversals
 -------------------------------------------------------------------------------
 
 instance (Eq k, Hashable k) => Lens.FunctorWithIndex k (InsOrdHashMap k) where
-    imap = mapWithKey
+  imap = mapWithKey
+
 instance (Eq k, Hashable k) => Lens.FoldableWithIndex k (InsOrdHashMap k) where
-    ifoldMap = foldMapWithKey
-    ifoldr   = foldrWithKey
+  ifoldMap = foldMapWithKey
+  ifoldr = foldrWithKey
+
 instance (Eq k, Hashable k) => Lens.TraversableWithIndex k (InsOrdHashMap k) where
-    itraverse = traverseWithKey
+  itraverse = traverseWithKey
 
 -------------------------------------------------------------------------------
 -- Lens
 -------------------------------------------------------------------------------
 
 type instance Index (InsOrdHashMap k v) = k
+
 type instance IxValue (InsOrdHashMap k v) = v
 
 instance (Eq k, Hashable k) => Ixed (InsOrdHashMap k v) where
-    ix k f m = ixImpl k pure f m
-    {-# INLINABLE ix #-}
+  ix k f m = ixImpl k pure f m
+  {-# INLINEABLE ix #-}
 
-ixImpl
-  :: (Eq k, Hashable k, Functor f)
-  => k
-  -> (InsOrdHashMap k v -> f (InsOrdHashMap k v))
-  -> (v -> f v)
-  -> InsOrdHashMap k v
-  -> f (InsOrdHashMap k v)
+ixImpl ::
+  (Eq k, Hashable k, Functor f) =>
+  k ->
+  (InsOrdHashMap k v -> f (InsOrdHashMap k v)) ->
+  (v -> f v) ->
+  InsOrdHashMap k v ->
+  f (InsOrdHashMap k v)
 ixImpl k point f m = case lookup k m of
-    Just v  -> f v <&> \v' -> insert k v' m
-    Nothing -> point m
+  Just v -> f v <&> \v' -> insert k v' m
+  Nothing -> point m
 {-# INLINE ixImpl #-}
 
 instance (Eq k, Hashable k) => At (InsOrdHashMap k a) where
-    at k f m = f mv <&> \r -> case r of
-        Nothing -> maybe m (const (delete k m)) mv
-        Just v' -> insert k v' m
-      where mv = lookup k m
-    {-# INLINABLE at #-}
+  at k f m =
+    f mv <&> \r -> case r of
+      Nothing -> maybe m (const (delete k m)) mv
+      Just v' -> insert k v' m
+    where
+      mv = lookup k m
+  {-# INLINEABLE at #-}
 
 -- | This is a slight lie, as roundtrip doesn't preserve ordering.
 hashMap :: Iso (InsOrdHashMap k a) (InsOrdHashMap k b) (HashMap k a) (HashMap k b)
@@ -256,17 +261,21 @@ unorderedTraversal :: Traversal (InsOrdHashMap k a) (InsOrdHashMap k b) a b
 unorderedTraversal = hashMap . traverse
 
 -------------------------------------------------------------------------------
+
 -- * Construction
+
 -------------------------------------------------------------------------------
 
 empty :: InsOrdHashMap k v
 empty = InsOrdHashMap InsOrdHashMap.empty
 
-singleton :: Hashable k => k -> v -> InsOrdHashMap k v
+singleton :: (Hashable k) => k -> v -> InsOrdHashMap k v
 singleton k v = InsOrdHashMap (InsOrdHashMap.singleton k v)
 
 -------------------------------------------------------------------------------
+
 -- * Basic interface
+
 -------------------------------------------------------------------------------
 
 null :: InsOrdHashMap k v -> Bool
@@ -275,55 +284,57 @@ null = InsOrdHashMap.null . unCompatInsOrdHashMap
 size :: InsOrdHashMap k v -> Int
 size = InsOrdHashMap.size . unCompatInsOrdHashMap
 
-insert :: Hashable k => k -> v -> InsOrdHashMap k v -> InsOrdHashMap k v
+insert :: (Hashable k) => k -> v -> InsOrdHashMap k v -> InsOrdHashMap k v
 insert k v = InsOrdHashMap . InsOrdHashMap.insert k v . unCompatInsOrdHashMap
 
-insertWith :: Hashable k => (v -> v -> v) -> k -> v -> InsOrdHashMap k v -> InsOrdHashMap k v
+insertWith :: (Hashable k) => (v -> v -> v) -> k -> v -> InsOrdHashMap k v -> InsOrdHashMap k v
 insertWith f k v = InsOrdHashMap . InsOrdHashMap.insertWith f k v . unCompatInsOrdHashMap
 
-delete :: Hashable k => k -> InsOrdHashMap k v -> InsOrdHashMap k v
+delete :: (Hashable k) => k -> InsOrdHashMap k v -> InsOrdHashMap k v
 delete k = InsOrdHashMap . InsOrdHashMap.delete k . unCompatInsOrdHashMap
 
-adjust :: Hashable k => (v -> v) -> k -> InsOrdHashMap k v -> InsOrdHashMap k v
+adjust :: (Hashable k) => (v -> v) -> k -> InsOrdHashMap k v -> InsOrdHashMap k v
 adjust f k = InsOrdHashMap . InsOrdHashMap.adjust f k . unCompatInsOrdHashMap
 
-update :: Hashable k => (v -> Maybe v) -> k -> InsOrdHashMap k v -> InsOrdHashMap k v
+update :: (Hashable k) => (v -> Maybe v) -> k -> InsOrdHashMap k v -> InsOrdHashMap k v
 update f k = InsOrdHashMap . InsOrdHashMap.update f k . unCompatInsOrdHashMap
 
-alter :: Hashable k => (Maybe v -> Maybe v) -> k -> InsOrdHashMap k v -> InsOrdHashMap k v
+alter :: (Hashable k) => (Maybe v -> Maybe v) -> k -> InsOrdHashMap k v -> InsOrdHashMap k v
 alter f k = InsOrdHashMap . InsOrdHashMap.alter f k . unCompatInsOrdHashMap
 
-member :: Hashable k => k -> InsOrdHashMap k v -> Bool
+member :: (Hashable k) => k -> InsOrdHashMap k v -> Bool
 member k = InsOrdHashMap.member k . unCompatInsOrdHashMap
 
-lookup :: Hashable k => k -> InsOrdHashMap k v -> Maybe v
+lookup :: (Hashable k) => k -> InsOrdHashMap k v -> Maybe v
 lookup k = InsOrdHashMap.lookup k . unCompatInsOrdHashMap
 
-lookupDefault :: Hashable k => v -> k -> InsOrdHashMap k v -> v
+lookupDefault :: (Hashable k) => v -> k -> InsOrdHashMap k v -> v
 lookupDefault k def = InsOrdHashMap.lookupDefault k def . unCompatInsOrdHashMap
 
 -- * Combine
 
-union :: Hashable k => InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
+union :: (Hashable k) => InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
 union m1 m2 = InsOrdHashMap (InsOrdHashMap.union (unCompatInsOrdHashMap m1) (unCompatInsOrdHashMap m2))
 
-unionWith :: Hashable k => (v -> v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
+unionWith :: (Hashable k) => (v -> v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
 unionWith f m1 m2 = InsOrdHashMap (InsOrdHashMap.unionWith f (unCompatInsOrdHashMap m1) (unCompatInsOrdHashMap m2))
 
-unionWithKey :: Hashable k => (k -> v -> v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
+unionWithKey :: (Hashable k) => (k -> v -> v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
 unionWithKey f m1 m2 = InsOrdHashMap (InsOrdHashMap.unionWithKey f (unCompatInsOrdHashMap m1) (unCompatInsOrdHashMap m2))
 
-unions :: Hashable k => [InsOrdHashMap k v] -> InsOrdHashMap k v
+unions :: (Hashable k) => [InsOrdHashMap k v] -> InsOrdHashMap k v
 unions = InsOrdHashMap . InsOrdHashMap.unions . Prelude.map unCompatInsOrdHashMap
 
 -------------------------------------------------------------------------------
+
 -- * Transformations
+
 -------------------------------------------------------------------------------
 
 map :: (v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v
 map f = InsOrdHashMap . InsOrdHashMap.map f . unCompatInsOrdHashMap
 
-mapKeys :: Hashable k => (k -> k) -> InsOrdHashMap k v -> InsOrdHashMap k v
+mapKeys :: (Hashable k) => (k -> k) -> InsOrdHashMap k v -> InsOrdHashMap k v
 mapKeys f = InsOrdHashMap . InsOrdHashMap.mapKeys f . unCompatInsOrdHashMap
 
 traverseKeys :: (Applicative f, Hashable k) => (k -> f k) -> InsOrdHashMap k v -> f (InsOrdHashMap k v)
@@ -344,23 +355,27 @@ unorderedTraverseWithKey :: (Applicative f, Hashable k) => (k -> v -> f v) -> In
 unorderedTraverseWithKey f = fmap InsOrdHashMap . InsOrdHashMap.unorderedTraverseWithKey f . unCompatInsOrdHashMap
 
 -------------------------------------------------------------------------------
+
 -- * Difference and intersection
+
 -------------------------------------------------------------------------------
 
-difference :: Hashable k => InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
+difference :: (Hashable k) => InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
 difference m1 m2 = InsOrdHashMap (InsOrdHashMap.difference (unCompatInsOrdHashMap m1) (unCompatInsOrdHashMap m2))
 
-intersection :: Hashable k => InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
+intersection :: (Hashable k) => InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
 intersection m1 m2 = InsOrdHashMap (InsOrdHashMap.intersection (unCompatInsOrdHashMap m1) (unCompatInsOrdHashMap m2))
 
-intersectionWith :: Hashable k => (v -> v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
+intersectionWith :: (Hashable k) => (v -> v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
 intersectionWith f m1 m2 = InsOrdHashMap (InsOrdHashMap.intersectionWith f (unCompatInsOrdHashMap m1) (unCompatInsOrdHashMap m2))
 
-intersectionWithKey :: Hashable k => (k -> v -> v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
+intersectionWithKey :: (Hashable k) => (k -> v -> v -> v) -> InsOrdHashMap k v -> InsOrdHashMap k v -> InsOrdHashMap k v
 intersectionWithKey f m1 m2 = InsOrdHashMap (InsOrdHashMap.intersectionWithKey f (unCompatInsOrdHashMap m1) (unCompatInsOrdHashMap m2))
 
 -------------------------------------------------------------------------------
+
 -- * Folds
+
 -------------------------------------------------------------------------------
 
 foldl' :: (a -> v -> a) -> a -> InsOrdHashMap k v -> a
@@ -369,7 +384,7 @@ foldl' f z = InsOrdHashMap.foldl' f z . unCompatInsOrdHashMap
 foldlWithKey' :: (a -> k -> v -> a) -> a -> InsOrdHashMap k v -> a
 foldlWithKey' f z = InsOrdHashMap.foldlWithKey' f z . unCompatInsOrdHashMap
 
-foldMapWithKey :: Monoid m => (k -> v -> m) -> InsOrdHashMap k v -> m
+foldMapWithKey :: (Monoid m) => (k -> v -> m) -> InsOrdHashMap k v -> m
 foldMapWithKey f = InsOrdHashMap.foldMapWithKey f . unCompatInsOrdHashMap
 
 foldrWithKey :: (k -> v -> a -> a) -> a -> InsOrdHashMap k v -> a
@@ -377,14 +392,16 @@ foldrWithKey f z = InsOrdHashMap.foldrWithKey f z . unCompatInsOrdHashMap
 
 -- ** Unordered
 
-unorderedFoldMap :: Monoid m => (v -> m) -> InsOrdHashMap k v -> m
+unorderedFoldMap :: (Monoid m) => (v -> m) -> InsOrdHashMap k v -> m
 unorderedFoldMap f = InsOrdHashMap.unorderedFoldMap f . unCompatInsOrdHashMap
 
-unorderedFoldMapWithKey :: Monoid m => (k -> v -> m) -> InsOrdHashMap k v -> m
+unorderedFoldMapWithKey :: (Monoid m) => (k -> v -> m) -> InsOrdHashMap k v -> m
 unorderedFoldMapWithKey f = InsOrdHashMap.unorderedFoldMapWithKey f . unCompatInsOrdHashMap
 
 -------------------------------------------------------------------------------
+
 -- * Filter
+
 -------------------------------------------------------------------------------
 
 filter :: (v -> Bool) -> InsOrdHashMap k v -> InsOrdHashMap k v
@@ -400,7 +417,9 @@ mapMaybeWithKey :: (k -> v -> Maybe v) -> InsOrdHashMap k v -> InsOrdHashMap k v
 mapMaybeWithKey f = InsOrdHashMap . InsOrdHashMap.mapMaybeWithKey f . unCompatInsOrdHashMap
 
 -------------------------------------------------------------------------------
+
 -- * Conversions
+
 -------------------------------------------------------------------------------
 
 keys :: InsOrdHashMap k v -> [k]
@@ -412,7 +431,7 @@ elems = InsOrdHashMap.elems . unCompatInsOrdHashMap
 toRevList :: InsOrdHashMap k v -> [(k, v)]
 toRevList = InsOrdHashMap.toRevList . unCompatInsOrdHashMap
 
-fromList :: Hashable k => [(k, v)] -> InsOrdHashMap k v
+fromList :: (Hashable k) => [(k, v)] -> InsOrdHashMap k v
 fromList = InsOrdHashMap . InsOrdHashMap.fromList
 
 toList :: InsOrdHashMap k v -> [(k, v)]
@@ -425,10 +444,10 @@ fromHashMap :: HashMap k v -> InsOrdHashMap k v
 fromHashMap = InsOrdHashMap . InsOrdHashMap.fromHashMap
 
 -------------------------------------------------------------------------------
+
 -- * Debugging
+
 -------------------------------------------------------------------------------
 
 valid :: (Eq k, Hashable k) => InsOrdHashMap k v -> Bool
 valid = InsOrdHashMap.valid . unCompatInsOrdHashMap
-
-#endif
