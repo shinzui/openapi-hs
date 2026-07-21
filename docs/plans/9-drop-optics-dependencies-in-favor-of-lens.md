@@ -106,15 +106,16 @@ This section must always reflect the actual current state of the work.
       'optics-th']`; audited Hackage/upstream provenance, dependency bounds, licensing, direct
       test coverage, and Mori reverse dependents. M0 remains unchecked so its committed test
       baseline and before/after artifact are captured during implementation.
-- [ ] M0: Record the baseline. Run `cabal build all` and `cabal test all` on the untouched
+- [x] (2026-07-21) M0: Recorded the baseline. `cabal build all` and `cabal test all` on the untouched
       tree and paste the tail of the output into Surprises & Discoveries so later failures can
-      be attributed correctly. Capture the current `offenders:` list from the command in
-      Purpose / Big Picture.
-- [ ] M0: Add and run permanent characterization tests for the public compat map and the
+      be attributed correctly. Captured the current `offenders:` list from the command in
+      Purpose / Big Picture, plus the 1,616-byte example at `/tmp/example-before.json`.
+- [x] (2026-07-21) M0: Added and ran permanent characterization tests for the public compat map and the
       public insertion-ordered set while they still delegate to the released
       `insert-ordered-containers`; include operation-model properties, order-sensitive output,
       JSON, duplicate-key behavior, folds/traversals, lens operations, `valid`, and upstream
-      overflow regression coverage.
+      overflow regression coverage. The expanded suite passes with 487 examples; the set tests
+      preserve the released union/`valid` caveat described below.
 - [ ] M1: Delete `src/Data/OpenApi/Optics.hs`, remove its re-export and import from
       `src/Data/OpenApi.hs`, strip the optics instance block out of
       `src/Data/HashMap/Strict/InsOrd/Compat.hs`, remove `optics-core` / `optics-th` /
@@ -210,6 +211,26 @@ implementation. Provide concise evidence.
   a faithful preservation of the upstream notice because the third non-endorsement clause names
   different parties. The complete upstream license must ship separately and verbatim. Its
   SHA-256 is `eef5ffdb683ddc4f93095f3a222f2d29b109c0e3dcb4dc46e1ed3b984e61391a`.
+
+- Finding: The released `InsOrdHashSet.union` does not preserve its documented `valid`
+  invariant when the right operand contributes a new member. The implementation offsets the
+  right indices by `i + 1` but records the new exclusive bound as `i + j`, so the last right
+  index can equal rather than remain below the bound. Membership, insertion order, JSON, and
+  normalization through `fromHashSet . toHashSet` still behave correctly.
+  Evidence: The first M0 property run failed after 23 generated cases on `valid`; the minimal
+  focused case `union (singleton "a") (singleton "b")` has `valid == False`, while applying
+  `fromHashSet . toHashSet` makes it `True`. The permanent set operation model requires
+  `valid` for every union-free tree and separately characterizes this released union caveat.
+
+- Finding: Mori's reverse-dependency query works and still reports `shinzui/servant-openapi-hs`,
+  `shinzui/relay-pagination`, and `shinzui/kansoku`, but `mori registry list`, `search`, and
+  `show` currently fail because the installed CLI queries project lifecycle columns that are
+  absent from the registry database schema.
+  Evidence: `mori registry dependents shinzui/openapi-hs --packages` succeeded on 2026-07-21;
+  the other registry commands returned PostgreSQL error `42703` for `p.lifecycle` or
+  `deprecation_alternative`. The vendored dependency source was therefore obtained from the
+  authoritative Hackage `0.3.0` release as already prescribed, and all four pinned hashes
+  matched.
 
 
 ## Decision Log
@@ -326,6 +347,16 @@ Record every decision made while working on the plan.
   integration failures that unit tests cannot.
   Date: 2026-07-21
 
+- Decision: Preserve the released `InsOrdHashSet.union` index-bound behavior during this
+  dependency-removal change instead of silently fixing it in the vendored copy.
+  Rationale: M0 exists to make the before/after behavior executable, and the plan otherwise
+  permits no algorithm changes to the hash-verified vendored source. Membership, ordering, and
+  serialization remain correct; changing the `valid` result would be an unrelated behavioral
+  fix that should be reviewed separately. The characterization suite requires `valid` for
+  union-free operation trees, records the union caveat explicitly, and proves callers can
+  normalize with `fromHashSet . toHashSet`.
+  Date: 2026-07-21
+
 
 ## Outcomes & Retrospective
 
@@ -337,6 +368,12 @@ highest-risk assumptions into explicit gates: permanent pre/post characterizatio
 retention of the set's non-optics instances, hash-pinned released source, an honest lens lower
 bound, complete third-party licensing in the sdist, unpacked-sdist testing, reverse-dependent
 migration rehearsals, and two-compiler CI. Fill in the implementation outcome after M4.
+
+Milestone 0 outcome (2026-07-21): the untouched GHC 9.12.4 build and all 463 original tests
+passed, the example baseline is 1,616 bytes with SHA-256
+`908d4c96efe9b693aba1828bd8d4c9009ff2f5a38aa74f66f119f850ed10272f`, and the offender list
+matched the plan. The permanent map/set characterization suites raise the total to 487 passing
+examples and exposed the released set union/`valid` caveat without changing production code.
 
 
 ## Context and Orientation
@@ -621,10 +658,14 @@ ordered-map contract.
 
 The set spec initially imports `Data.HashSet.InsOrd` from the released dependency. Define an
 operation model for `empty`, `singleton`, `fromList`, `insert`, `delete`, `union`, `difference`,
-`intersection`, `map`, and `filter`; compare membership with `Data.HashSet`, require `valid`, and
-test stable `toList` order, duplicate insertion, union bias/order, JSON array order and
+`intersection`, `map`, and `filter`; compare membership with `Data.HashSet`, and test stable
+`toList` order, duplicate insertion, union bias/order, JSON array order and
 semantic round-trip, `ix`/`at`/`contains`, `show`/`read`, and forcing through both `NFData` and
-`NFData1`. For JSON round-trips compare `toList` and membership rather than raw set `Eq`, because
+`NFData1`. Require `valid` for every generated operation tree that contains no union. Separately
+characterize the released union index-bound caveat: `union (singleton "a") (singleton "b")`
+has correct membership and order but `valid == False`, while normalization through
+`fromHashSet . toHashSet` restores `valid`. For JSON round-trips compare `toList` and membership
+rather than raw set `Eq`, because
 the released set equality observes internal insertion indices that decoding may compact after
 deletion; preserve and document that existing caveat instead of accidentally declaring a new
 contract. At the `toList` level, `fromList ["a","b","a"]` must match
@@ -1337,3 +1378,9 @@ the complete upstream license part of the checked sdist, documented both contain
 migrations, and made unpacked-sdist, known reverse-dependent, and two-compiler CI checks release
 gates. These changes address silent behavioral drift, avoidable API loss, packaging omissions,
 and downstream integration failures discovered during the audit.
+
+2026-07-21: During M0 implementation, revised the set characterization expectations after
+proving that released `insert-ordered-containers-0.3.0` does not preserve `valid` across a
+right-contributing union. The suite now preserves that observed behavior explicitly, requires
+`valid` for union-free generated operations, and demonstrates normalization. Also recorded the
+current Mori registry-schema mismatch while retaining its successful reverse-dependent result.
