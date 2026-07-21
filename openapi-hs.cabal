@@ -33,6 +33,7 @@ library
   hs-source-dirs:     src
   exposed-modules:
     Data.HashMap.Strict.InsOrd.Compat
+    Data.HashSet.InsOrd.Compat
     Data.OpenApi
     Data.OpenApi.Aeson.Compat
     Data.OpenApi.Declare
@@ -71,20 +72,20 @@ library
 
   -- other dependencies
   build-depends:
-    , aeson                      >=2.0.1.0  && <2.3
-    , aeson-pretty               >=0.8.7    && <0.9
-    , base-compat-batteries      >=0.11.1   && <0.16
-    , cookie                     >=0.4.3    && <0.6
-    , generics-sop               >=0.5.1.0  && <0.6
-    , hashable                   >=1.2.7.0  && <1.6
-    , http-media                 >=0.8.0.0  && <0.9
-    , insert-ordered-containers  >=0.2.3    && <0.4
-    , lens                       >=5.3.6    && <5.4
-    , QuickCheck                 >=2.10.1   && <2.19
-    , scientific                 >=0.3.6.2  && <0.4
-    , unordered-containers       >=0.2.9.0  && <0.3
-    , uuid-types                 >=1.0.3    && <1.1
-    , vector                     >=0.12.0.1 && <0.14
+    , aeson                  >=2.0.1.0  && <2.3
+    , aeson-pretty           >=0.8.7    && <0.9
+    , base-compat-batteries  >=0.11.1   && <0.16
+    , cookie                 >=0.4.3    && <0.6
+    , deepseq                >=1.4.4    && <1.6
+    , generics-sop           >=0.5.1.0  && <0.6
+    , hashable               >=1.2.7.0  && <1.6
+    , http-media             >=0.8.0.0  && <0.9
+    , lens                   >=5.3.6    && <5.4
+    , QuickCheck             >=2.10.1   && <2.19
+    , scientific             >=0.3.6.2  && <0.4
+    , unordered-containers   >=0.2.9.0  && <0.3
+    , uuid-types             >=1.0.3    && <1.1
+    , vector                 >=0.12.0.1 && <0.14
 
   default-language:   GHC2024
   default-extensions:
@@ -114,7 +115,6 @@ test-suite spec
     , containers
     , deepseq
     , hashable
-    , insert-ordered-containers
     , lens
     , mtl
     , openapi-hs

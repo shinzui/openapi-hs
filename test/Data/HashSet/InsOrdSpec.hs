@@ -7,7 +7,7 @@ import Control.Lens (at, contains, ix, (&), (.~), (?~), (^?))
 import Data.Aeson (eitherDecode, encode)
 import Data.ByteString.Lazy.Char8 qualified as BSL
 import Data.HashSet qualified as HashSet
-import Data.HashSet.InsOrd qualified as InsOrd
+import Data.HashSet.InsOrd.Compat qualified as InsOrd
 import Data.Word (Word8)
 import Test.Hspec
 import Test.Hspec.QuickCheck (prop)

@@ -35,7 +35,7 @@ import Data.Aeson.Types (Pair, Parser)
 import Data.Char (isUpper, toLower)
 import Data.Foldable (foldl', traverse_)
 import Data.HashMap.Strict.InsOrd.Compat qualified as InsOrd
-import Data.HashSet.InsOrd qualified as InsOrdHS
+import Data.HashSet.InsOrd.Compat qualified as InsOrdHS
 import Data.OpenApi.Aeson.Compat (deleteKey, insertKey, keyToString, lookupKey, objectToList, stringToKey)
 import Data.Set qualified as Set
 import Data.Text (Text)

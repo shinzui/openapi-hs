@@ -34,7 +34,7 @@ where
 import Control.Lens
 import Data.Data.Lens
 import Data.HashMap.Strict.InsOrd.Compat qualified as InsOrdHashMap
-import Data.HashSet.InsOrd qualified as InsOrdHS
+import Data.HashSet.InsOrd.Compat qualified as InsOrdHS
 import Data.List.Compat
 import Data.Maybe (mapMaybe)
 import Data.OpenApi.Declare

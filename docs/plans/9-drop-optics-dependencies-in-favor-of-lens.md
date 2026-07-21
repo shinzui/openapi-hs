@@ -135,14 +135,16 @@ This section must always reflect the actual current state of the work.
 - [x] (2026-07-21) M2: `cabal build all` and all 487 tests are green; the scoped search for a
       direct upstream ordered-map import returns no matches.
 - [x] (2026-07-21) M2: Committed the independently validated map vendoring milestone.
-- [ ] M3: Add `src/Data/HashSet/InsOrd/Compat.hs` (the vendored `InsOrdHashSet`, optics
-      stripped but all non-optics instances retained), register it in `openapi-hs.cabal`, and
-      repoint the five modules that import `Data.HashSet.InsOrd` after M0.
-- [ ] M3: Remove `insert-ordered-containers` from both `build-depends` stanzas in
-      `openapi-hs.cabal`; add the direct `deepseq` dependency required by the retained public
-      `NFData`/`NFData1` set instances.
-- [ ] M3: `cabal build all` and `cabal test all` green.
-- [ ] M3: Commit.
+- [x] (2026-07-21) M3: Added `src/Data/HashSet/InsOrd/Compat.hs` (the vendored
+      `InsOrdHashSet`, optics stripped but all non-optics instances retained), registered it in
+      `openapi-hs.cabal`, and repointed the five modules that imported `Data.HashSet.InsOrd`
+      after M0.
+- [x] (2026-07-21) M3: Removed `insert-ordered-containers` from both `build-depends` stanzas in
+      `openapi-hs.cabal` and added the direct `deepseq` dependency required by the retained
+      public `NFData`/`NFData1` set instances.
+- [x] (2026-07-21) M3: `cabal build all` and all 487 tests are green; the dependency/import
+      scoped search returns no upstream package declaration or set import.
+- [x] (2026-07-21) M3: Committed the independently validated set vendoring milestone.
 - [ ] M4: Prove the build plan is optics-free with the `offenders:` command; add the complete
       upstream BSD-3-Clause text under `LICENSES/` and include it in the source distribution;
       bump `version:` to `5.0.0`; write the `5.0.0` CHANGELOG and migration entries; re-run
@@ -240,6 +242,13 @@ implementation. Provide concise evidence.
   Evidence: The first M1 test rebuild reported missing temporary objects in four test modules;
   after confirming no repository Cabal process remained, `cabal clean` followed by a single
   `cabal test all --test-show-details=direct` completed with `487 examples, 0 failures`.
+
+- Finding: The original M3 acceptance search was too broad: required provenance comments in
+  all three vendored modules intentionally contain the text `insert-ordered-containers`, so a
+  blanket text search cannot return no matches after correct implementation.
+  Evidence: After both Cabal dependency entries and every upstream set import were removed,
+  the original command matched only provenance/Haddock comments. The acceptance command now
+  targets Cabal list entries and Haskell import declarations, and returns no matches.
 
 
 ## Decision Log
@@ -396,6 +405,12 @@ public type switch is gone; the wrapper still owns order-insensitive equality an
 JSON. The complete pre-format upstream diff contained only the authorized provenance/module
 renames, indexed-class import move, and removal of optics, Aeson, deepseq, Apply, and Bind code.
 All 487 tests pass unchanged.
+
+Milestone 3 outcome (2026-07-21): the public insertion-ordered set is now exposed from this
+package as `Data.HashSet.InsOrd.Compat`; all five internal/test importers use it, every
+non-optics upstream instance remains, and `deepseq` is direct. `insert-ordered-containers` is
+absent from both dependency stanzas. The pre-format upstream diff contained only the authorized
+provenance/module/internal-import changes and optics removal, and all 487 tests pass unchanged.
 
 
 ## Context and Orientation
@@ -888,7 +903,7 @@ instance section may differ. Then change `test/Data/HashSet/InsOrdSpec.hs` to im
 
 Acceptance for M3: `cabal build all` succeeds; `cabal test all --test-show-details=direct`
 reports zero failures; and
-`rg -n "insert-ordered-containers|Data\.HashSet\.InsOrd(\s|$)" src test examples openapi-hs.cabal -g '*.hs' -g '*.cabal'`
+`rg -n '(^|,\s*)insert-ordered-containers|import Data\.HashSet\.InsOrd(\s|$)' src test examples openapi-hs.cabal -g '*.hs' -g '*.cabal'`
 returns nothing.
 
 ### Milestone 4 — Prove it, license it, release it
@@ -1084,7 +1099,7 @@ The final `rg` must print nothing. Then commit with subject
 
 cabal build all
 cabal test all --test-show-details=direct
-rg -n "insert-ordered-containers|Data\.HashSet\.InsOrd(\s|$)" \
+rg -n '(^|,\s*)insert-ordered-containers|import Data\.HashSet\.InsOrd(\s|$)' \
   src test examples openapi-hs.cabal -g '*.hs' -g '*.cabal'
 ```
 
@@ -1406,3 +1421,8 @@ proving that released `insert-ordered-containers-0.3.0` does not preserve `valid
 right-contributing union. The suite now preserves that observed behavior explicitly, requires
 `valid` for union-free generated operations, and demonstrates normalization. Also recorded the
 current Mori registry-schema mismatch while retaining its successful reverse-dependent result.
+
+2026-07-21: During M3 implementation, narrowed the dependency-removal search to Cabal list
+entries and Haskell import declarations. The original blanket text search necessarily matched
+the required vendoring provenance comments and could not satisfy its own no-output acceptance
+criterion after a correct implementation.

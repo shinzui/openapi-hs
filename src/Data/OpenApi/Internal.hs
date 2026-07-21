@@ -35,7 +35,7 @@ import Data.Data
 import Data.HashMap.Strict qualified as HashMap
 import Data.HashMap.Strict.InsOrd.Compat (InsOrdHashMap)
 import Data.HashMap.Strict.InsOrd.Compat qualified as InsOrdHashMap
-import Data.HashSet.InsOrd (InsOrdHashSet)
+import Data.HashSet.InsOrd.Compat (InsOrdHashSet)
 import Data.Hashable (Hashable (..))
 import Data.Map (Map)
 import Data.Map qualified as Map

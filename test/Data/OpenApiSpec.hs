@@ -9,7 +9,7 @@ import Control.Lens
 import Data.Aeson
 import Data.Aeson.QQ.Simple
 import Data.HashMap.Strict (HashMap)
-import Data.HashSet.InsOrd qualified as InsOrdHS
+import Data.HashSet.InsOrd.Compat qualified as InsOrdHS
 import Data.OpenApi
 import Data.Text (Text)
 import Prelude.Compat
